@@ -9,16 +9,13 @@ const supabase = createClient(
 );
 
 export default async function HomePage() {
-  // Load sales totals
   const { data: salesData, error: salesError } = await supabase
     .from("sale_totals")
     .select("total_sales, gross_profit");
 
-  // Load expenses
   const { data: expensesData, error: expensesError } =
     await supabase.from("expenses").select("amount");
 
-  // Load account balances
   const { data: accountData, error: accountError } =
     await supabase
       .from("account_balances")
@@ -66,6 +63,10 @@ export default async function HomePage() {
     {
       label: "Products & Stock",
       href: "/products",
+    },
+    {
+      label: "Stocktake / Adjustments",
+      href: "/stocktake",
     },
     {
       label: "Stock Purchases",
@@ -125,8 +126,6 @@ export default async function HomePage() {
           </p>
         </div>
 
-        {/* Financial summary */}
-
         <div
           style={{
             display: "grid",
@@ -161,8 +160,6 @@ export default async function HomePage() {
             value={`£${cashBalance.toFixed(2)}`}
           />
         </div>
-
-        {/* Navigation */}
 
         <div
           style={{
