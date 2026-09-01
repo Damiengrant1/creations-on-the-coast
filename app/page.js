@@ -1,27 +1,34 @@
-import { supabase } from "../lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-async function getDashboardData() {
-  const { data: salesData, error: salesError } = await supabase
-    .from("sale_totals")
-    .select("total_sales,gross_profit");
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+);
 
-  if (salesError) {
-    console.error("Sales dashboard error:", salesError);
+async function getDashboardData() {
+  const { data: sales, error } = await supabase
+    .from("sale_totals")
+    .select("total_sales, gross_profit");
+
+  if (error) {
+    console.error("Supabase error:", error);
+    return {
+      totalSales: 0,
+      grossProfit: 0,
+    };
   }
 
-  const totalSales =
-    salesData?.reduce(
-      (total, sale) => total + Number(sale.total_sales || 0),
-      0
-    ) || 0;
+  const totalSales = sales.reduce(
+    (sum, sale) => sum + Number(sale.total_sales || 0),
+    0
+  );
 
-  const grossProfit =
-    salesData?.reduce(
-      (total, sale) => total + Number(sale.gross_profit || 0),
-      0
-    ) || 0;
+  const grossProfit = sales.reduce(
+    (sum, sale) => sum + Number(sale.gross_profit || 0),
+    0
+  );
 
   return {
     totalSales,
@@ -32,23 +39,21 @@ async function getDashboardData() {
 export default async function HomePage() {
   const { totalSales, grossProfit } = await getDashboardData();
 
-  const dashboardCards = [
-    {
-      title: "Total Sales",
-      value: `£${totalSales.toFixed(2)}`,
-    },
-    {
-      title: "Gross Profit",
-      value: `£${grossProfit.toFixed(2)}`,
-    },
-    {
-      title: "Net Profit",
-      value: "£0.00",
-    },
-    {
-      title: "Cash Balance",
-      value: "£0.00",
-    },
+  const cards = [
+    ["Total Sales", `£${totalSales.toFixed(2)}`],
+    ["Gross Profit", `£${grossProfit.toFixed(2)}`],
+    ["Net Profit", "£0.00"],
+    ["Cash Balance", "£0.00"],
+  ];
+
+  const buttons = [
+    "Record Sale",
+    "Products & Stock",
+    "Stock Purchases",
+    "Events",
+    "Expenses",
+    "Cash Flow",
+    "Reports",
   ];
 
   return (
@@ -66,7 +71,12 @@ export default async function HomePage() {
           margin: "0 auto",
         }}
       >
-        <h1 style={{ fontSize: "42px", marginBottom: "8px" }}>
+        <h1
+          style={{
+            fontSize: "42px",
+            marginBottom: "8px",
+          }}
+        >
           Creations on the Coast
         </h1>
 
@@ -88,9 +98,9 @@ export default async function HomePage() {
             marginBottom: "32px",
           }}
         >
-          {dashboardCards.map((card) => (
+          {cards.map(([title, value]) => (
             <div
-              key={card.title}
+              key={title}
               style={{
                 background: "#fff",
                 padding: "24px",
@@ -104,7 +114,7 @@ export default async function HomePage() {
                   marginBottom: "10px",
                 }}
               >
-                {card.title}
+                {title}
               </div>
 
               <div
@@ -113,7 +123,7 @@ export default async function HomePage() {
                   fontWeight: "700",
                 }}
               >
-                {card.value}
+                {value}
               </div>
             </div>
           ))}
@@ -126,15 +136,7 @@ export default async function HomePage() {
             gap: "12px",
           }}
         >
-          {[
-            "Record Sale",
-            "Products & Stock",
-            "Stock Purchases",
-            "Events",
-            "Expenses",
-            "Cash Flow",
-            "Reports",
-          ].map((label) => (
+          {buttons.map((label) => (
             <button
               key={label}
               style={{
