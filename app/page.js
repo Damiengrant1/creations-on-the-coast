@@ -70,7 +70,7 @@ export default async function HomePage() {
     },
     {
       label: "Stock Purchases",
-      href: "#",
+      href: "/stock-purchases",
     },
     {
       label: "Events",
