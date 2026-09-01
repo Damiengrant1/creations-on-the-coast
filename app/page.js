@@ -8,42 +8,69 @@ const supabase = createClient(
 );
 
 async function getDashboardData() {
-  const { data: sales, error } = await supabase
+  const { data: sales, error: salesError } = await supabase
     .from("sale_totals")
     .select("total_sales, gross_profit");
 
-  if (error) {
-    console.error("Supabase error:", error);
-    return {
-      totalSales: 0,
-      grossProfit: 0,
-    };
-  }
+  const { data: expenses, error: expensesError } = await supabase
+    .from("expenses")
+    .select("amount");
 
-  const totalSales = sales.reduce(
-    (sum, sale) => sum + Number(sale.total_sales || 0),
-    0
-  );
+  const { data: accounts, error: accountsError } = await supabase
+    .from("account_balances")
+    .select("current_balance");
 
-  const grossProfit = sales.reduce(
-    (sum, sale) => sum + Number(sale.gross_profit || 0),
-    0
-  );
+  if (salesError) console.error("Sales error:", salesError);
+  if (expensesError) console.error("Expenses error:", expensesError);
+  if (accountsError) console.error("Accounts error:", accountsError);
+
+  const totalSales =
+    sales?.reduce(
+      (sum, sale) => sum + Number(sale.total_sales || 0),
+      0
+    ) || 0;
+
+  const grossProfit =
+    sales?.reduce(
+      (sum, sale) => sum + Number(sale.gross_profit || 0),
+      0
+    ) || 0;
+
+  const totalExpenses =
+    expenses?.reduce(
+      (sum, expense) => sum + Number(expense.amount || 0),
+      0
+    ) || 0;
+
+  const netProfit = grossProfit - totalExpenses;
+
+  const cashBalance =
+    accounts?.reduce(
+      (sum, account) => sum + Number(account.current_balance || 0),
+      0
+    ) || 0;
 
   return {
     totalSales,
     grossProfit,
+    netProfit,
+    cashBalance,
   };
 }
 
 export default async function HomePage() {
-  const { totalSales, grossProfit } = await getDashboardData();
+  const {
+    totalSales,
+    grossProfit,
+    netProfit,
+    cashBalance,
+  } = await getDashboardData();
 
   const cards = [
     ["Total Sales", `£${totalSales.toFixed(2)}`],
     ["Gross Profit", `£${grossProfit.toFixed(2)}`],
-    ["Net Profit", "£0.00"],
-    ["Cash Balance", "£0.00"],
+    ["Net Profit", `£${netProfit.toFixed(2)}`],
+    ["Cash Balance", `£${cashBalance.toFixed(2)}`],
   ];
 
   const buttons = [
