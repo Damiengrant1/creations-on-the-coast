@@ -13,6 +13,8 @@ export default function NewProductPage() {
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
+  const [colour, setColour] = useState("");
+  const [size, setSize] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [lowStockLevel, setLowStockLevel] = useState(0);
@@ -66,9 +68,13 @@ export default function NewProductPage() {
         product_name: productName.trim(),
         sku: sku.trim() || null,
         category: category.trim() || null,
+        colour: colour.trim() || null,
+        size: size.trim() || null,
         cost_price: Number(costPrice || 0),
         selling_price: Number(sellingPrice || 0),
-        low_stock_level: trackStock ? Number(lowStockLevel || 0) : 0,
+        low_stock_level: trackStock
+          ? Number(lowStockLevel || 0)
+          : 0,
         track_stock: trackStock,
         active,
       })
@@ -77,7 +83,9 @@ export default function NewProductPage() {
 
     if (productError) {
       console.error(productError);
-      setMessage(`Could not create product: ${productError.message}`);
+      setMessage(
+        `Could not create product: ${productError.message}`
+      );
       setSaving(false);
       return;
     }
@@ -107,6 +115,8 @@ export default function NewProductPage() {
     setProductName("");
     setSku("");
     setCategory("");
+    setColour("");
+    setSize("");
     setCostPrice("");
     setSellingPrice("");
     setLowStockLevel(0);
@@ -177,7 +187,7 @@ export default function NewProductPage() {
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="e.g. Black Hoodie"
+              placeholder="e.g. Classic Hoodie"
               style={fieldStyle}
               required
             />
@@ -192,6 +202,18 @@ export default function NewProductPage() {
             }}
           >
             <div>
+              <label style={labelStyle}>Category</label>
+
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Hoodies"
+                style={fieldStyle}
+              />
+            </div>
+
+            <div>
               <label style={labelStyle}>SKU</label>
 
               <input
@@ -202,15 +224,36 @@ export default function NewProductPage() {
                 style={fieldStyle}
               />
             </div>
+          </div>
 
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "16px",
+              marginBottom: "20px",
+            }}
+          >
             <div>
-              <label style={labelStyle}>Category</label>
+              <label style={labelStyle}>Colour</label>
 
               <input
                 type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Hoodies"
+                value={colour}
+                onChange={(e) => setColour(e.target.value)}
+                placeholder="e.g. Black"
+                style={fieldStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Size</label>
+
+              <input
+                type="text"
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                placeholder="e.g. L"
                 style={fieldStyle}
               />
             </div>
@@ -273,7 +316,9 @@ export default function NewProductPage() {
               <input
                 type="checkbox"
                 checked={trackStock}
-                onChange={(e) => setTrackStock(e.target.checked)}
+                onChange={(e) =>
+                  setTrackStock(e.target.checked)
+                }
               />
 
               Track stock for this product
@@ -288,13 +333,17 @@ export default function NewProductPage() {
                 }}
               >
                 <div>
-                  <label style={labelStyle}>Opening Stock</label>
+                  <label style={labelStyle}>
+                    Opening Stock
+                  </label>
 
                   <input
                     type="number"
                     min="0"
                     value={openingStock}
-                    onChange={(e) => setOpeningStock(e.target.value)}
+                    onChange={(e) =>
+                      setOpeningStock(e.target.value)
+                    }
                     style={fieldStyle}
                   />
                 </div>
@@ -308,7 +357,9 @@ export default function NewProductPage() {
                     type="number"
                     min="0"
                     value={lowStockLevel}
-                    onChange={(e) => setLowStockLevel(e.target.value)}
+                    onChange={(e) =>
+                      setLowStockLevel(e.target.value)
+                    }
                     style={fieldStyle}
                   />
                 </div>
@@ -328,7 +379,9 @@ export default function NewProductPage() {
               <input
                 type="checkbox"
                 checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+                onChange={(e) =>
+                  setActive(e.target.checked)
+                }
               />
 
               Active product
@@ -360,7 +413,9 @@ export default function NewProductPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "16px",
-              cursor: saving ? "not-allowed" : "pointer",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
             }}
           >
             {saving ? "Saving..." : "Create Product"}
