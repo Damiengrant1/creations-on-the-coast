@@ -61,7 +61,8 @@ export default function ProductsPage() {
     );
 
     const mergedProducts = (stockData || []).map((product) => {
-      const settings = productSettings.get(product.product_id) || {};
+      const settings =
+        productSettings.get(product.product_id) || {};
 
       return {
         ...product,
@@ -230,7 +231,7 @@ export default function ProductsPage() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: "1200px",
+                minWidth: "1250px",
               }}
             >
               <thead>
@@ -271,16 +272,26 @@ export default function ProductsPage() {
                       }}
                     >
                       <Td>
-                        <strong>{product.product_name}</strong>
+                        <strong>
+                          {product.product_name}
+                        </strong>
                       </Td>
 
-                      <Td>{product.colour || "—"}</Td>
+                      <Td>
+                        {product.colour || "—"}
+                      </Td>
 
-                      <Td>{product.size || "—"}</Td>
+                      <Td>
+                        {product.size || "—"}
+                      </Td>
 
-                      <Td>{product.sku || "—"}</Td>
+                      <Td>
+                        {product.sku || "—"}
+                      </Td>
 
-                      <Td>{product.category || "—"}</Td>
+                      <Td>
+                        {product.category || "—"}
+                      </Td>
 
                       <Td>
                         £
@@ -298,7 +309,9 @@ export default function ProductsPage() {
 
                       <Td>
                         {product.track_stock
-                          ? Number(product.current_stock || 0)
+                          ? Number(
+                              product.current_stock || 0
+                            )
                           : "N/A"}
                       </Td>
 
@@ -312,7 +325,9 @@ export default function ProductsPage() {
                             }}
                           >
                             {product.low_stock_level}
-                            {isLowStock ? " — LOW" : ""}
+                            {isLowStock
+                              ? " — LOW"
+                              : ""}
                           </span>
                         ) : (
                           "N/A"
@@ -328,29 +343,57 @@ export default function ProductsPage() {
                       </Td>
 
                       <Td>
-                        {product.track_stock ? "Yes" : "No"}
+                        {product.track_stock
+                          ? "Yes"
+                          : "No"}
                       </Td>
 
                       <Td>
-                        {product.active ? "Active" : "Inactive"}
+                        {product.active
+                          ? "Active"
+                          : "Inactive"}
                       </Td>
 
                       <Td>
-                        <Link
-                          href={`/products/new?copy=${product.product_id}`}
+                        <div
                           style={{
-                            display: "inline-block",
-                            padding: "8px 11px",
-                            border: "1px solid #ccc",
-                            borderRadius: "7px",
-                            color: "#111",
-                            textDecoration: "none",
-                            fontWeight: "600",
-                            whiteSpace: "nowrap",
+                            display: "flex",
+                            gap: "8px",
+                            alignItems: "center",
                           }}
                         >
-                          + Add Variant
-                        </Link>
+                          <Link
+                            href={`/products/edit/${product.product_id}`}
+                            style={{
+                              display: "inline-block",
+                              padding: "8px 11px",
+                              border: "1px solid #ccc",
+                              borderRadius: "7px",
+                              color: "#111",
+                              textDecoration: "none",
+                              fontWeight: "600",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Edit
+                          </Link>
+
+                          <Link
+                            href={`/products/new?copy=${product.product_id}`}
+                            style={{
+                              display: "inline-block",
+                              padding: "8px 11px",
+                              border: "1px solid #ccc",
+                              borderRadius: "7px",
+                              color: "#111",
+                              textDecoration: "none",
+                              fontWeight: "600",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            + Add Variant
+                          </Link>
+                        </div>
                       </Td>
                     </tr>
                   );
