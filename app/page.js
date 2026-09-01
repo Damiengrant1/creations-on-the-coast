@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -74,13 +75,13 @@ export default async function HomePage() {
   ];
 
   const buttons = [
-    "Record Sale",
-    "Products & Stock",
-    "Stock Purchases",
-    "Events",
-    "Expenses",
-    "Cash Flow",
-    "Reports",
+    { label: "Record Sale", href: "/record-sale" },
+    { label: "Products & Stock", href: "#" },
+    { label: "Stock Purchases", href: "#" },
+    { label: "Events", href: "#" },
+    { label: "Expenses", href: "#" },
+    { label: "Cash Flow", href: "#" },
+    { label: "Reports", href: "#" },
   ];
 
   return (
@@ -163,20 +164,24 @@ export default async function HomePage() {
             gap: "12px",
           }}
         >
-          {buttons.map((label) => (
-            <button
-              key={label}
+          {buttons.map((button) => (
+            <Link
+              key={button.label}
+              href={button.href}
               style={{
+                display: "block",
                 padding: "16px",
                 borderRadius: "10px",
                 border: "1px solid #ddd",
                 background: "#fff",
                 fontWeight: "600",
-                cursor: "pointer",
+                color: "#111",
+                textDecoration: "none",
+                textAlign: "center",
               }}
             >
-              {label}
-            </button>
+              {button.label}
+            </Link>
           ))}
         </div>
       </div>
