@@ -17,8 +17,11 @@ export default function NewProductPage() {
   const [category, setCategory] = useState("");
   const [colour, setColour] = useState("");
   const [size, setSize] = useState("");
-  const [costPrice, setCostPrice] = useState("");
+
+  const [stockCost, setStockCost] = useState("");
+  const [productionCost, setProductionCost] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
+
   const [lowStockLevel, setLowStockLevel] = useState(0);
   const [trackStock, setTrackStock] = useState(true);
   const [openingStock, setOpeningStock] = useState(0);
@@ -47,7 +50,7 @@ export default function NewProductPage() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, product_name, sku, category, colour, size, cost_price, selling_price, low_stock_level, track_stock, active"
+          "id, product_name, sku, category, colour, size, stock_cost, production_cost, selling_price, low_stock_level, track_stock, active"
         )
         .eq("id", copyProductId)
         .single();
@@ -63,11 +66,21 @@ export default function NewProductPage() {
 
       setProductName(data.product_name || "");
       setCategory(data.category || "");
-      setCostPrice(
-        data.cost_price !== null && data.cost_price !== undefined
-          ? String(data.cost_price)
+      setColour(data.colour || "");
+
+      setStockCost(
+        data.stock_cost !== null && data.stock_cost !== undefined
+          ? String(data.stock_cost)
           : ""
       );
+
+      setProductionCost(
+        data.production_cost !== null &&
+          data.production_cost !== undefined
+          ? String(data.production_cost)
+          : ""
+      );
+
       setSellingPrice(
         data.selling_price !== null &&
           data.selling_price !== undefined
@@ -79,15 +92,8 @@ export default function NewProductPage() {
       setTrackStock(data.track_stock ?? true);
       setActive(data.active ?? true);
 
-      // Keep the colour because you'll often be adding
-      // another size of the same colour.
-      setColour(data.colour || "");
-
-      // Clear fields that should be unique to the variant.
       setSize("");
       setSku("");
-
-      // Stock will be set later during stocktake.
       setOpeningStock(0);
 
       setLoadingCopy(false);
@@ -95,6 +101,9 @@ export default function NewProductPage() {
 
     loadProductToCopy();
   }, [copyProductId]);
+
+  const totalDirectCost =
+    Number(stockCost || 0) + Number(productionCost || 0);
 
   const fieldStyle = {
     width: "100%",
@@ -121,8 +130,12 @@ export default function NewProductPage() {
       return;
     }
 
-    if (Number(costPrice) < 0 || Number(sellingPrice) < 0) {
-      setMessage("Prices cannot be negative.");
+    if (
+      Number(stockCost) < 0 ||
+      Number(productionCost) < 0 ||
+      Number(sellingPrice) < 0
+    ) {
+      setMessage("Costs and selling price cannot be negative.");
       return;
     }
 
@@ -133,6 +146,10 @@ export default function NewProductPage() {
 
     setSaving(true);
 
+    const totalCost =
+      Number(stockCost || 0) +
+      Number(productionCost || 0);
+
     const { data: product, error: productError } = await supabase
       .from("products")
       .insert({
@@ -141,11 +158,20 @@ export default function NewProductPage() {
         category: category.trim() || null,
         colour: colour.trim() || null,
         size: size.trim() || null,
-        cost_price: Number(costPrice || 0),
+
+        stock_cost: Number(stockCost || 0),
+        production_cost: Number(productionCost || 0),
+
+        // Keep this populated for compatibility with
+        // the existing sales/profit logic.
+        cost_price: totalCost,
+
         selling_price: Number(sellingPrice || 0),
+
         low_stock_level: trackStock
           ? Number(lowStockLevel || 0)
           : 0,
+
         track_stock: trackStock,
         active,
       })
@@ -184,8 +210,6 @@ export default function NewProductPage() {
     if (copyProductId) {
       setMessage("Variant created successfully.");
 
-      // Keep the shared information ready so another
-      // size can be entered immediately.
       setSku("");
       setSize("");
       setOpeningStock(0);
@@ -197,8 +221,11 @@ export default function NewProductPage() {
       setCategory("");
       setColour("");
       setSize("");
-      setCostPrice("");
+
+      setStockCost("");
+      setProductionCost("");
       setSellingPrice("");
+
       setLowStockLevel(0);
       setTrackStock(true);
       setOpeningStock(0);
@@ -292,8 +319,8 @@ export default function NewProductPage() {
                 fontSize: "14px",
               }}
             >
-              Product details and colour have been carried
-              across. Enter the new size and SKU.
+              Product details and colour have been carried across.
+              Enter the new size and SKU.
             </div>
           </div>
         )}
@@ -308,9 +335,7 @@ export default function NewProductPage() {
           }}
         >
           <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>
-              Product Name
-            </label>
+            <label style={labelStyle}>Product Name</label>
 
             <input
               type="text"
@@ -333,9 +358,7 @@ export default function NewProductPage() {
             }}
           >
             <div>
-              <label style={labelStyle}>
-                Category
-              </label>
+              <label style={labelStyle}>Category</label>
 
               <input
                 type="text"
@@ -349,9 +372,7 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
-                SKU
-              </label>
+              <label style={labelStyle}>SKU</label>
 
               <input
                 type="text"
@@ -374,9 +395,7 @@ export default function NewProductPage() {
             }}
           >
             <div>
-              <label style={labelStyle}>
-                Colour
-              </label>
+              <label style={labelStyle}>Colour</label>
 
               <input
                 type="text"
@@ -390,9 +409,7 @@ export default function NewProductPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>
-                Size
-              </label>
+              <label style={labelStyle}>Size</label>
 
               <input
                 type="text"
@@ -409,24 +426,45 @@ export default function NewProductPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(180px, 1fr))",
               gap: "16px",
               marginBottom: "20px",
             }}
           >
             <div>
               <label style={labelStyle}>
-                Cost Price (£)
+                Stock Cost (£)
               </label>
 
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                value={costPrice}
+                value={stockCost}
                 onChange={(e) =>
-                  setCostPrice(e.target.value)
+                  setStockCost(e.target.value)
                 }
+                placeholder="Blank garment incl. VAT"
+                style={fieldStyle}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Production Cost (£)
+              </label>
+
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={productionCost}
+                onChange={(e) =>
+                  setProductionCost(e.target.value)
+                }
+                placeholder="Print/material estimate"
                 style={fieldStyle}
                 required
               />
@@ -448,6 +486,40 @@ export default function NewProductPage() {
                 style={fieldStyle}
                 required
               />
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#f7f7f8",
+              padding: "18px",
+              borderRadius: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={{ color: "#666" }}>
+              Total Direct Cost
+            </div>
+
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: "700",
+                marginTop: "4px",
+              }}
+            >
+              £{totalDirectCost.toFixed(2)}
+            </div>
+
+            <div
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginTop: "6px",
+              }}
+            >
+              Used for gross profit calculations. Stock value uses
+              Stock Cost only.
             </div>
           </div>
 
