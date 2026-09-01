@@ -22,27 +22,56 @@ export default function ProductsPage() {
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase
+    const { data: stockData, error: stockError } = await supabase
       .from("current_stock")
       .select(
-        "id, product_name, sku, category, cost_price, selling_price, low_stock_level, active, current_stock, stock_value, track_stock"
+        "product_id, product_name, sku, category, cost_price, selling_price, low_stock_level, active, current_stock, stock_value"
       )
       .order("product_name");
 
-    if (error) {
-      console.error(error);
-      setMessage(`Could not load products: ${error.message}`);
+    const { data: productData, error: productError } = await supabase
+      .from("products")
+      .select("id, track_stock");
+
+    if (stockError) {
+      console.error("Stock error:", stockError);
+      setMessage(`Could not load stock: ${stockError.message}`);
       setProducts([]);
-    } else {
-      setProducts(data || []);
+      setLoading(false);
+      return;
     }
 
+    if (productError) {
+      console.error("Product error:", productError);
+      setMessage(`Could not load products: ${productError.message}`);
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    const productSettings = new Map(
+      (productData || []).map((product) => [
+        product.id,
+        product.track_stock,
+      ])
+    );
+
+    const mergedProducts = (stockData || []).map((product) => ({
+      ...product,
+      track_stock: productSettings.get(product.product_id) ?? true,
+    }));
+
+    setProducts(mergedProducts);
     setLoading(false);
   }
 
   const totals = useMemo(() => {
     const stockValue = products.reduce(
-      (sum, product) => sum + Number(product.stock_value || 0),
+      (sum, product) =>
+        sum +
+        (product.track_stock
+          ? Number(product.stock_value || 0)
+          : 0),
       0
     );
 
@@ -207,7 +236,7 @@ export default function ProductsPage() {
                   <Th>Cost</Th>
                   <Th>Selling Price</Th>
                   <Th>Current Stock</Th>
-                  <Th>Low Stock</Th>
+                  <Th>Low Stock Level</Th>
                   <Th>Stock Value</Th>
                   <Th>Track Stock</Th>
                   <Th>Status</Th>
@@ -223,22 +252,18 @@ export default function ProductsPage() {
 
                   return (
                     <tr
-                      key={product.id}
+                      key={product.product_id}
                       style={{
                         borderTop: "1px solid #eee",
                       }}
                     >
                       <Td>
-                        <strong>
-                          {product.product_name}
-                        </strong>
+                        <strong>{product.product_name}</strong>
                       </Td>
 
                       <Td>{product.sku || "—"}</Td>
 
-                      <Td>
-                        {product.category || "—"}
-                      </Td>
+                      <Td>{product.category || "—"}</Td>
 
                       <Td>
                         £
@@ -256,9 +281,7 @@ export default function ProductsPage() {
 
                       <Td>
                         {product.track_stock
-                          ? Number(
-                              product.current_stock || 0
-                            )
+                          ? Number(product.current_stock || 0)
                           : "N/A"}
                       </Td>
 
@@ -272,9 +295,8 @@ export default function ProductsPage() {
                             }}
                           >
                             {product.low_stock_level}
-                            {isLowStock
-                              ? " — LOW"
-                              : ""}
+
+                            {isLowStock ? " — LOW" : ""}
                           </span>
                         ) : (
                           "N/A"
@@ -290,9 +312,7 @@ export default function ProductsPage() {
                       </Td>
 
                       <Td>
-                        {product.track_stock
-                          ? "Yes"
-                          : "No"}
+                        {product.track_stock ? "Yes" : "No"}
                       </Td>
 
                       <Td>
