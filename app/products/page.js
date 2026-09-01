@@ -31,7 +31,7 @@ export default function ProductsPage() {
 
     const { data: productData, error: productError } = await supabase
       .from("products")
-      .select("id, track_stock");
+      .select("id, track_stock, colour, size");
 
     if (stockError) {
       console.error("Stock error:", stockError);
@@ -52,14 +52,24 @@ export default function ProductsPage() {
     const productSettings = new Map(
       (productData || []).map((product) => [
         product.id,
-        product.track_stock,
+        {
+          track_stock: product.track_stock,
+          colour: product.colour,
+          size: product.size,
+        },
       ])
     );
 
-    const mergedProducts = (stockData || []).map((product) => ({
-      ...product,
-      track_stock: productSettings.get(product.product_id) ?? true,
-    }));
+    const mergedProducts = (stockData || []).map((product) => {
+      const settings = productSettings.get(product.product_id) || {};
+
+      return {
+        ...product,
+        track_stock: settings.track_stock ?? true,
+        colour: settings.colour ?? null,
+        size: settings.size ?? null,
+      };
+    });
 
     setProducts(mergedProducts);
     setLoading(false);
@@ -104,7 +114,7 @@ export default function ProductsPage() {
     >
       <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: "1300px",
           margin: "0 auto",
         }}
       >
@@ -146,7 +156,7 @@ export default function ProductsPage() {
                 margin: 0,
               }}
             >
-              View products, prices and current stock levels.
+              View products, variants, prices and current stock levels.
             </p>
           </div>
 
@@ -220,7 +230,7 @@ export default function ProductsPage() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: "900px",
+                minWidth: "1100px",
               }}
             >
               <thead>
@@ -231,6 +241,8 @@ export default function ProductsPage() {
                   }}
                 >
                   <Th>Product</Th>
+                  <Th>Colour</Th>
+                  <Th>Size</Th>
                   <Th>SKU</Th>
                   <Th>Category</Th>
                   <Th>Cost</Th>
@@ -260,6 +272,10 @@ export default function ProductsPage() {
                       <Td>
                         <strong>{product.product_name}</strong>
                       </Td>
+
+                      <Td>{product.colour || "—"}</Td>
+
+                      <Td>{product.size || "—"}</Td>
 
                       <Td>{product.sku || "—"}</Td>
 
@@ -295,7 +311,6 @@ export default function ProductsPage() {
                             }}
                           >
                             {product.low_stock_level}
-
                             {isLowStock ? " — LOW" : ""}
                           </span>
                         ) : (
@@ -316,9 +331,7 @@ export default function ProductsPage() {
                       </Td>
 
                       <Td>
-                        {product.active
-                          ? "Active"
-                          : "Inactive"}
+                        {product.active ? "Active" : "Inactive"}
                       </Td>
                     </tr>
                   );
