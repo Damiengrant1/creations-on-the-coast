@@ -8,80 +8,85 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 );
 
-async function getDashboardData() {
-  const { data: sales, error: salesError } = await supabase
+export default async function HomePage() {
+  // Load sales totals
+  const { data: salesData, error: salesError } = await supabase
     .from("sale_totals")
     .select("total_sales, gross_profit");
 
-  const { data: expenses, error: expensesError } = await supabase
-    .from("expenses")
-    .select("amount");
+  // Load expenses
+  const { data: expensesData, error: expensesError } =
+    await supabase.from("expenses").select("amount");
 
-  const { data: accounts, error: accountsError } = await supabase
-    .from("account_balances")
-    .select("current_balance");
+  // Load account balances
+  const { data: accountData, error: accountError } =
+    await supabase
+      .from("account_balances")
+      .select("current_balance");
 
-  if (salesError) console.error("Sales error:", salesError);
-  if (expensesError) console.error("Expenses error:", expensesError);
-  if (accountsError) console.error("Accounts error:", accountsError);
+  if (salesError) {
+    console.error("Sales error:", salesError);
+  }
 
-  const totalSales =
-    sales?.reduce(
-      (sum, sale) => sum + Number(sale.total_sales || 0),
-      0
-    ) || 0;
+  if (expensesError) {
+    console.error("Expenses error:", expensesError);
+  }
 
-  const grossProfit =
-    sales?.reduce(
-      (sum, sale) => sum + Number(sale.gross_profit || 0),
-      0
-    ) || 0;
+  if (accountError) {
+    console.error("Account balance error:", accountError);
+  }
 
-  const totalExpenses =
-    expenses?.reduce(
-      (sum, expense) => sum + Number(expense.amount || 0),
-      0
-    ) || 0;
+  const totalSales = (salesData || []).reduce(
+    (sum, row) => sum + Number(row.total_sales || 0),
+    0
+  );
+
+  const grossProfit = (salesData || []).reduce(
+    (sum, row) => sum + Number(row.gross_profit || 0),
+    0
+  );
+
+  const totalExpenses = (expensesData || []).reduce(
+    (sum, row) => sum + Number(row.amount || 0),
+    0
+  );
 
   const netProfit = grossProfit - totalExpenses;
 
-  const cashBalance =
-    accounts?.reduce(
-      (sum, account) => sum + Number(account.current_balance || 0),
-      0
-    ) || 0;
-
-  return {
-    totalSales,
-    grossProfit,
-    netProfit,
-    cashBalance,
-  };
-}
-
-export default async function HomePage() {
-  const {
-    totalSales,
-    grossProfit,
-    netProfit,
-    cashBalance,
-  } = await getDashboardData();
-
-  const cards = [
-    ["Total Sales", `£${totalSales.toFixed(2)}`],
-    ["Gross Profit", `£${grossProfit.toFixed(2)}`],
-    ["Net Profit", `£${netProfit.toFixed(2)}`],
-    ["Cash Balance", `£${cashBalance.toFixed(2)}`],
-  ];
+  const cashBalance = (accountData || []).reduce(
+    (sum, row) => sum + Number(row.current_balance || 0),
+    0
+  );
 
   const buttons = [
-    { label: "Record Sale", href: "/record-sale" },
-    { label: "Products & Stock", href: "#" },
-    { label: "Stock Purchases", href: "#" },
-    { label: "Events", href: "#" },
-    { label: "Expenses", href: "#" },
-    { label: "Cash Flow", href: "#" },
-    { label: "Reports", href: "#" },
+    {
+      label: "Record Sale",
+      href: "/record-sale",
+    },
+    {
+      label: "Products & Stock",
+      href: "/products",
+    },
+    {
+      label: "Stock Purchases",
+      href: "#",
+    },
+    {
+      label: "Events",
+      href: "#",
+    },
+    {
+      label: "Expenses",
+      href: "#",
+    },
+    {
+      label: "Cash Flow",
+      href: "#",
+    },
+    {
+      label: "Reports",
+      href: "#",
+    },
   ];
 
   return (
@@ -95,96 +100,182 @@ export default async function HomePage() {
     >
       <div
         style={{
-          maxWidth: "1100px",
+          maxWidth: "1200px",
           margin: "0 auto",
         }}
       >
-        <h1
-          style={{
-            fontSize: "42px",
-            marginBottom: "8px",
-          }}
-        >
-          Creations on the Coast
-        </h1>
+        <div style={{ marginBottom: "32px" }}>
+          <h1
+            style={{
+              fontSize: "40px",
+              margin: "0 0 8px 0",
+            }}
+          >
+            Creations on the Coast
+          </h1>
 
-        <p
-          style={{
-            fontSize: "18px",
-            color: "#666",
-            marginBottom: "32px",
-          }}
-        >
-          Business Management Dashboard
-        </p>
+          <p
+            style={{
+              color: "#666",
+              fontSize: "17px",
+              margin: 0,
+            }}
+          >
+            Business Dashboard
+          </p>
+        </div>
+
+        {/* Financial summary */}
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "16px",
             marginBottom: "32px",
           }}
         >
-          {cards.map(([title, value]) => (
-            <div
-              key={title}
-              style={{
-                background: "#fff",
-                padding: "24px",
-                borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-              }}
-            >
-              <div
-                style={{
-                  color: "#666",
-                  marginBottom: "10px",
-                }}
-              >
-                {title}
-              </div>
+          <SummaryCard
+            title="Total Sales"
+            value={`£${totalSales.toFixed(2)}`}
+          />
 
-              <div
-                style={{
-                  fontSize: "30px",
-                  fontWeight: "700",
-                }}
-              >
-                {value}
-              </div>
-            </div>
-          ))}
+          <SummaryCard
+            title="Gross Profit"
+            value={`£${grossProfit.toFixed(2)}`}
+          />
+
+          <SummaryCard
+            title="Expenses"
+            value={`£${totalExpenses.toFixed(2)}`}
+          />
+
+          <SummaryCard
+            title="Net Profit"
+            value={`£${netProfit.toFixed(2)}`}
+          />
+
+          <SummaryCard
+            title="Cash Balance"
+            value={`£${cashBalance.toFixed(2)}`}
+          />
+        </div>
+
+        {/* Navigation */}
+
+        <div
+          style={{
+            background: "#fff",
+            padding: "28px",
+            borderRadius: "14px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+          }}
+        >
+          <h2
+            style={{
+              marginTop: 0,
+              marginBottom: "20px",
+              fontSize: "24px",
+            }}
+          >
+            Business Management
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            {buttons.map((button) => {
+              const isActive = button.href !== "#";
+
+              if (!isActive) {
+                return (
+                  <div
+                    key={button.label}
+                    style={{
+                      padding: "16px",
+                      borderRadius: "9px",
+                      background: "#f2f2f2",
+                      color: "#888",
+                      textAlign: "center",
+                      fontWeight: "600",
+                      cursor: "default",
+                    }}
+                  >
+                    {button.label}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={button.label}
+                  href={button.href}
+                  style={{
+                    padding: "16px",
+                    borderRadius: "9px",
+                    background: "#111",
+                    color: "#fff",
+                    textAlign: "center",
+                    textDecoration: "none",
+                    fontWeight: "700",
+                  }}
+                >
+                  {button.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "12px",
+            marginTop: "18px",
+            color: "#777",
+            fontSize: "13px",
+            textAlign: "center",
           }}
         >
-          {buttons.map((button) => (
-            <Link
-              key={button.label}
-              href={button.href}
-              style={{
-                display: "block",
-                padding: "16px",
-                borderRadius: "10px",
-                border: "1px solid #ddd",
-                background: "#fff",
-                fontWeight: "600",
-                color: "#111",
-                textDecoration: "none",
-                textAlign: "center",
-              }}
-            >
-              {button.label}
-            </Link>
-          ))}
+          Creations on the Coast Ltd
         </div>
       </div>
     </main>
+  );
+}
+
+function SummaryCard({ title, value }) {
+  return (
+    <div
+      style={{
+        background: "#fff",
+        padding: "22px",
+        borderRadius: "12px",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+      }}
+    >
+      <div
+        style={{
+          color: "#666",
+          marginBottom: "8px",
+          fontSize: "14px",
+        }}
+      >
+        {title}
+      </div>
+
+      <div
+        style={{
+          fontSize: "28px",
+          fontWeight: "700",
+        }}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
