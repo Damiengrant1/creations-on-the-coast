@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
@@ -11,8 +10,7 @@ const supabase = createClient(
 );
 
 export default function NewProductPage() {
-  const searchParams = useSearchParams();
-  const copyProductId = searchParams.get("copy");
+  const [copyProductId, setCopyProductId] = useState(null);
 
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
@@ -29,6 +27,15 @@ export default function NewProductPage() {
   const [saving, setSaving] = useState(false);
   const [loadingCopy, setLoadingCopy] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const copyId = params.get("copy");
+
+    if (copyId) {
+      setCopyProductId(copyId);
+    }
+  }, []);
 
   useEffect(() => {
     if (!copyProductId) return;
@@ -67,19 +74,20 @@ export default function NewProductPage() {
           ? String(data.selling_price)
           : ""
       );
+
       setLowStockLevel(data.low_stock_level ?? 0);
       setTrackStock(data.track_stock ?? true);
       setActive(data.active ?? true);
 
-      // Carry colour across because usually the next variant
-      // will simply be another size of the same colour.
+      // Keep the colour because you'll often be adding
+      // another size of the same colour.
       setColour(data.colour || "");
 
-      // Clear fields that should normally be unique per variant.
+      // Clear fields that should be unique to the variant.
       setSize("");
       setSku("");
 
-      // New variants always start at zero until stocktake.
+      // Stock will be set later during stocktake.
       setOpeningStock(0);
 
       setLoadingCopy(false);
@@ -173,19 +181,17 @@ export default function NewProductPage() {
       }
     }
 
-    setMessage(
-      copyProductId
-        ? "Variant created successfully."
-        : "Product created successfully."
-    );
-
     if (copyProductId) {
-      // Keep shared details ready for another variant.
+      setMessage("Variant created successfully.");
+
+      // Keep the shared information ready so another
+      // size can be entered immediately.
       setSku("");
       setSize("");
       setOpeningStock(0);
     } else {
-      // Completely reset a normal new-product form.
+      setMessage("Product created successfully.");
+
       setProductName("");
       setSku("");
       setCategory("");
@@ -251,7 +257,9 @@ export default function NewProductPage() {
             marginBottom: "8px",
           }}
         >
-          {copyProductId ? "Add Product Variant" : "Add New Product"}
+          {copyProductId
+            ? "Add Product Variant"
+            : "Add New Product"}
         </h1>
 
         <p
@@ -276,6 +284,7 @@ export default function NewProductPage() {
             }}
           >
             <strong>Adding a variant</strong>
+
             <div
               style={{
                 marginTop: "4px",
@@ -283,8 +292,8 @@ export default function NewProductPage() {
                 fontSize: "14px",
               }}
             >
-              Product details and colour have been carried across.
-              Size and SKU are ready for the new variant.
+              Product details and colour have been carried
+              across. Enter the new size and SKU.
             </div>
           </div>
         )}
@@ -299,12 +308,16 @@ export default function NewProductPage() {
           }}
         >
           <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Product Name</label>
+            <label style={labelStyle}>
+              Product Name
+            </label>
 
             <input
               type="text"
               value={productName}
-              onChange={(e) => setProductName(e.target.value)}
+              onChange={(e) =>
+                setProductName(e.target.value)
+              }
               placeholder="e.g. Uneek Hoody (Adult)"
               style={fieldStyle}
               required
@@ -320,24 +333,32 @@ export default function NewProductPage() {
             }}
           >
             <div>
-              <label style={labelStyle}>Category</label>
+              <label style={labelStyle}>
+                Category
+              </label>
 
               <input
                 type="text"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) =>
+                  setCategory(e.target.value)
+                }
                 placeholder="e.g. Hoodies"
                 style={fieldStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>SKU</label>
+              <label style={labelStyle}>
+                SKU
+              </label>
 
               <input
                 type="text"
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
+                onChange={(e) =>
+                  setSku(e.target.value)
+                }
                 placeholder="Optional"
                 style={fieldStyle}
               />
@@ -353,24 +374,32 @@ export default function NewProductPage() {
             }}
           >
             <div>
-              <label style={labelStyle}>Colour</label>
+              <label style={labelStyle}>
+                Colour
+              </label>
 
               <input
                 type="text"
                 value={colour}
-                onChange={(e) => setColour(e.target.value)}
+                onChange={(e) =>
+                  setColour(e.target.value)
+                }
                 placeholder="e.g. Black"
                 style={fieldStyle}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Size</label>
+              <label style={labelStyle}>
+                Size
+              </label>
 
               <input
                 type="text"
                 value={size}
-                onChange={(e) => setSize(e.target.value)}
+                onChange={(e) =>
+                  setSize(e.target.value)
+                }
                 placeholder="e.g. L"
                 style={fieldStyle}
               />
@@ -386,28 +415,36 @@ export default function NewProductPage() {
             }}
           >
             <div>
-              <label style={labelStyle}>Cost Price (£)</label>
+              <label style={labelStyle}>
+                Cost Price (£)
+              </label>
 
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
+                onChange={(e) =>
+                  setCostPrice(e.target.value)
+                }
                 style={fieldStyle}
                 required
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Selling Price (£)</label>
+              <label style={labelStyle}>
+                Selling Price (£)
+              </label>
 
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
+                onChange={(e) =>
+                  setSellingPrice(e.target.value)
+                }
                 style={fieldStyle}
                 required
               />
@@ -428,7 +465,9 @@ export default function NewProductPage() {
                 alignItems: "center",
                 gap: "10px",
                 fontWeight: "600",
-                marginBottom: trackStock ? "18px" : "0",
+                marginBottom: trackStock
+                  ? "18px"
+                  : "0",
               }}
             >
               <input
@@ -451,7 +490,9 @@ export default function NewProductPage() {
                 }}
               >
                 <div>
-                  <label style={labelStyle}>Opening Stock</label>
+                  <label style={labelStyle}>
+                    Opening Stock
+                  </label>
 
                   <input
                     type="number"
@@ -495,7 +536,9 @@ export default function NewProductPage() {
               <input
                 type="checkbox"
                 checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+                onChange={(e) =>
+                  setActive(e.target.checked)
+                }
               />
 
               Active product
@@ -527,7 +570,9 @@ export default function NewProductPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "16px",
-              cursor: saving ? "not-allowed" : "pointer",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
             }}
           >
             {saving
