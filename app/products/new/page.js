@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,6 +11,9 @@ const supabase = createClient(
 );
 
 export default function NewProductPage() {
+  const searchParams = useSearchParams();
+  const copyProductId = searchParams.get("copy");
+
   const [productName, setProductName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState("");
@@ -23,7 +27,66 @@ export default function NewProductPage() {
   const [active, setActive] = useState(true);
 
   const [saving, setSaving] = useState(false);
+  const [loadingCopy, setLoadingCopy] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!copyProductId) return;
+
+    async function loadProductToCopy() {
+      setLoadingCopy(true);
+      setMessage("");
+
+      const { data, error } = await supabase
+        .from("products")
+        .select(
+          "id, product_name, sku, category, colour, size, cost_price, selling_price, low_stock_level, track_stock, active"
+        )
+        .eq("id", copyProductId)
+        .single();
+
+      if (error) {
+        console.error(error);
+        setMessage(
+          `Could not load product to copy: ${error.message}`
+        );
+        setLoadingCopy(false);
+        return;
+      }
+
+      setProductName(data.product_name || "");
+      setCategory(data.category || "");
+      setCostPrice(
+        data.cost_price !== null && data.cost_price !== undefined
+          ? String(data.cost_price)
+          : ""
+      );
+      setSellingPrice(
+        data.selling_price !== null &&
+          data.selling_price !== undefined
+          ? String(data.selling_price)
+          : ""
+      );
+      setLowStockLevel(data.low_stock_level ?? 0);
+      setTrackStock(data.track_stock ?? true);
+      setActive(data.active ?? true);
+
+      // Carry colour across because usually the next variant
+      // will simply be another size of the same colour.
+      setColour(data.colour || "");
+
+      // Clear fields that should normally be unique per variant.
+      setSize("");
+      setSku("");
+
+      // New variants always start at zero until stocktake.
+      setOpeningStock(0);
+
+      setLoadingCopy(false);
+    }
+
+    loadProductToCopy();
+  }, [copyProductId]);
 
   const fieldStyle = {
     width: "100%",
@@ -110,21 +173,50 @@ export default function NewProductPage() {
       }
     }
 
-    setMessage("Product created successfully.");
+    setMessage(
+      copyProductId
+        ? "Variant created successfully."
+        : "Product created successfully."
+    );
 
-    setProductName("");
-    setSku("");
-    setCategory("");
-    setColour("");
-    setSize("");
-    setCostPrice("");
-    setSellingPrice("");
-    setLowStockLevel(0);
-    setTrackStock(true);
-    setOpeningStock(0);
-    setActive(true);
+    if (copyProductId) {
+      // Keep shared details ready for another variant.
+      setSku("");
+      setSize("");
+      setOpeningStock(0);
+    } else {
+      // Completely reset a normal new-product form.
+      setProductName("");
+      setSku("");
+      setCategory("");
+      setColour("");
+      setSize("");
+      setCostPrice("");
+      setSellingPrice("");
+      setLowStockLevel(0);
+      setTrackStock(true);
+      setOpeningStock(0);
+      setActive(true);
+    }
 
     setSaving(false);
+  }
+
+  if (loadingCopy) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "#f7f7f8",
+          padding: "40px 20px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+          Loading product details...
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -159,7 +251,7 @@ export default function NewProductPage() {
             marginBottom: "8px",
           }}
         >
-          Add New Product
+          {copyProductId ? "Add Product Variant" : "Add New Product"}
         </h1>
 
         <p
@@ -168,8 +260,34 @@ export default function NewProductPage() {
             marginBottom: "28px",
           }}
         >
-          Add a physical product or service to Creations on the Coast.
+          {copyProductId
+            ? "Shared product details have been copied. Enter the details for the new variant."
+            : "Add a physical product or service to Creations on the Coast."}
         </p>
+
+        {copyProductId && (
+          <div
+            style={{
+              background: "#eef6ff",
+              border: "1px solid #cfe4ff",
+              padding: "14px",
+              borderRadius: "9px",
+              marginBottom: "20px",
+            }}
+          >
+            <strong>Adding a variant</strong>
+            <div
+              style={{
+                marginTop: "4px",
+                color: "#555",
+                fontSize: "14px",
+              }}
+            >
+              Product details and colour have been carried across.
+              Size and SKU are ready for the new variant.
+            </div>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
@@ -187,7 +305,7 @@ export default function NewProductPage() {
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="e.g. Classic Hoodie"
+              placeholder="e.g. Uneek Hoody (Adult)"
               style={fieldStyle}
               required
             />
@@ -333,9 +451,7 @@ export default function NewProductPage() {
                 }}
               >
                 <div>
-                  <label style={labelStyle}>
-                    Opening Stock
-                  </label>
+                  <label style={labelStyle}>Opening Stock</label>
 
                   <input
                     type="number"
@@ -379,9 +495,7 @@ export default function NewProductPage() {
               <input
                 type="checkbox"
                 checked={active}
-                onChange={(e) =>
-                  setActive(e.target.checked)
-                }
+                onChange={(e) => setActive(e.target.checked)}
               />
 
               Active product
@@ -413,12 +527,14 @@ export default function NewProductPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "16px",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            {saving ? "Saving..." : "Create Product"}
+            {saving
+              ? "Saving..."
+              : copyProductId
+              ? "Create Variant"
+              : "Create Product"}
           </button>
         </form>
       </div>
