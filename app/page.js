@@ -1,4 +1,56 @@
-export default function HomePage() {
+import { supabase } from "../lib/supabase";
+
+export const dynamic = "force-dynamic";
+
+async function getDashboardData() {
+  const { data: salesData, error: salesError } = await supabase
+    .from("sale_totals")
+    .select("total_sales,gross_profit");
+
+  if (salesError) {
+    console.error("Sales dashboard error:", salesError);
+  }
+
+  const totalSales =
+    salesData?.reduce(
+      (total, sale) => total + Number(sale.total_sales || 0),
+      0
+    ) || 0;
+
+  const grossProfit =
+    salesData?.reduce(
+      (total, sale) => total + Number(sale.gross_profit || 0),
+      0
+    ) || 0;
+
+  return {
+    totalSales,
+    grossProfit,
+  };
+}
+
+export default async function HomePage() {
+  const { totalSales, grossProfit } = await getDashboardData();
+
+  const dashboardCards = [
+    {
+      title: "Total Sales",
+      value: `£${totalSales.toFixed(2)}`,
+    },
+    {
+      title: "Gross Profit",
+      value: `£${grossProfit.toFixed(2)}`,
+    },
+    {
+      title: "Net Profit",
+      value: "£0.00",
+    },
+    {
+      title: "Cash Balance",
+      value: "£0.00",
+    },
+  ];
+
   return (
     <main
       style={{
@@ -18,7 +70,13 @@ export default function HomePage() {
           Creations on the Coast
         </h1>
 
-        <p style={{ fontSize: "18px", color: "#666", marginBottom: "32px" }}>
+        <p
+          style={{
+            fontSize: "18px",
+            color: "#666",
+            marginBottom: "32px",
+          }}
+        >
           Business Management Dashboard
         </p>
 
@@ -30,14 +88,9 @@ export default function HomePage() {
             marginBottom: "32px",
           }}
         >
-          {[
-            "Total Sales",
-            "Gross Profit",
-            "Net Profit",
-            "Cash Balance",
-          ].map((title) => (
+          {dashboardCards.map((card) => (
             <div
-              key={title}
+              key={card.title}
               style={{
                 background: "#fff",
                 padding: "24px",
@@ -45,8 +98,23 @@ export default function HomePage() {
                 boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
               }}
             >
-              <div style={{ color: "#666", marginBottom: "10px" }}>{title}</div>
-              <div style={{ fontSize: "30px", fontWeight: "700" }}>£0.00</div>
+              <div
+                style={{
+                  color: "#666",
+                  marginBottom: "10px",
+                }}
+              >
+                {card.title}
+              </div>
+
+              <div
+                style={{
+                  fontSize: "30px",
+                  fontWeight: "700",
+                }}
+              >
+                {card.value}
+              </div>
             </div>
           ))}
         </div>
