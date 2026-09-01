@@ -240,7 +240,6 @@ export default function StockPurchasesPage() {
         product_id: item.productId,
         quantity,
         cost_per_unit: costPerUnit,
-        line_total: quantity * costPerUnit,
       };
     });
 
