@@ -19,8 +19,11 @@ export default function EditProductPage() {
   const [category, setCategory] = useState("");
   const [colour, setColour] = useState("");
   const [size, setSize] = useState("");
-  const [costPrice, setCostPrice] = useState("");
+
+  const [stockCost, setStockCost] = useState("");
+  const [productionCost, setProductionCost] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
+
   const [lowStockLevel, setLowStockLevel] = useState(0);
   const [trackStock, setTrackStock] = useState(true);
   const [active, setActive] = useState(true);
@@ -38,7 +41,7 @@ export default function EditProductPage() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, product_name, sku, category, colour, size, cost_price, selling_price, low_stock_level, track_stock, active"
+          "id, product_name, sku, category, colour, size, stock_cost, production_cost, cost_price, selling_price, low_stock_level, track_stock, active"
         )
         .eq("id", productId)
         .single();
@@ -55,8 +58,27 @@ export default function EditProductPage() {
       setCategory(data.category || "");
       setColour(data.colour || "");
       setSize(data.size || "");
-      setCostPrice(String(data.cost_price ?? ""));
-      setSellingPrice(String(data.selling_price ?? ""));
+
+      setStockCost(
+        data.stock_cost !== null && data.stock_cost !== undefined
+          ? String(data.stock_cost)
+          : ""
+      );
+
+      setProductionCost(
+        data.production_cost !== null &&
+          data.production_cost !== undefined
+          ? String(data.production_cost)
+          : ""
+      );
+
+      setSellingPrice(
+        data.selling_price !== null &&
+          data.selling_price !== undefined
+          ? String(data.selling_price)
+          : ""
+      );
+
       setLowStockLevel(data.low_stock_level ?? 0);
       setTrackStock(data.track_stock ?? true);
       setActive(data.active ?? true);
@@ -66,6 +88,9 @@ export default function EditProductPage() {
 
     loadProduct();
   }, [productId]);
+
+  const totalDirectCost =
+    Number(stockCost || 0) + Number(productionCost || 0);
 
   const fieldStyle = {
     width: "100%",
@@ -92,7 +117,20 @@ export default function EditProductPage() {
       return;
     }
 
+    if (
+      Number(stockCost) < 0 ||
+      Number(productionCost) < 0 ||
+      Number(sellingPrice) < 0
+    ) {
+      setMessage("Costs and selling price cannot be negative.");
+      return;
+    }
+
     setSaving(true);
+
+    const totalCost =
+      Number(stockCost || 0) +
+      Number(productionCost || 0);
 
     const { error } = await supabase
       .from("products")
@@ -102,11 +140,20 @@ export default function EditProductPage() {
         category: category.trim() || null,
         colour: colour.trim() || null,
         size: size.trim() || null,
-        cost_price: Number(costPrice || 0),
+
+        stock_cost: Number(stockCost || 0),
+        production_cost: Number(productionCost || 0),
+
+        // Keep old cost_price in sync for existing
+        // sales/profit logic.
+        cost_price: totalCost,
+
         selling_price: Number(sellingPrice || 0),
+
         low_stock_level: trackStock
           ? Number(lowStockLevel || 0)
           : 0,
+
         track_stock: trackStock,
         active,
       })
@@ -125,7 +172,12 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <main style={{ padding: "40px", fontFamily: "Arial, sans-serif" }}>
+      <main
+        style={{
+          padding: "40px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
         Loading product...
       </main>
     );
@@ -140,7 +192,12 @@ export default function EditProductPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+      <div
+        style={{
+          maxWidth: "760px",
+          margin: "0 auto",
+        }}
+      >
         <Link
           href="/products"
           style={{
@@ -152,12 +209,22 @@ export default function EditProductPage() {
           ← Back to Products
         </Link>
 
-        <h1 style={{ fontSize: "36px", marginBottom: "8px" }}>
+        <h1
+          style={{
+            fontSize: "36px",
+            marginBottom: "8px",
+          }}
+        >
           Edit Product
         </h1>
 
-        <p style={{ color: "#666", marginBottom: "28px" }}>
-          Update the product details. Stock quantity is adjusted separately.
+        <p
+          style={{
+            color: "#666",
+            marginBottom: "28px",
+          }}
+        >
+          Update product details, pricing and stock settings.
         </p>
 
         <form
@@ -171,10 +238,13 @@ export default function EditProductPage() {
         >
           <div style={{ marginBottom: "20px" }}>
             <label style={labelStyle}>Product Name</label>
+
             <input
               type="text"
               value={productName}
-              onChange={(e) => setProductName(e.target.value)}
+              onChange={(e) =>
+                setProductName(e.target.value)
+              }
               style={fieldStyle}
               required
             />
@@ -190,20 +260,26 @@ export default function EditProductPage() {
           >
             <div>
               <label style={labelStyle}>Category</label>
+
               <input
                 type="text"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) =>
+                  setCategory(e.target.value)
+                }
                 style={fieldStyle}
               />
             </div>
 
             <div>
               <label style={labelStyle}>SKU</label>
+
               <input
                 type="text"
                 value={sku}
-                onChange={(e) => setSku(e.target.value)}
+                onChange={(e) =>
+                  setSku(e.target.value)
+                }
                 style={fieldStyle}
               />
             </div>
@@ -219,20 +295,26 @@ export default function EditProductPage() {
           >
             <div>
               <label style={labelStyle}>Colour</label>
+
               <input
                 type="text"
                 value={colour}
-                onChange={(e) => setColour(e.target.value)}
+                onChange={(e) =>
+                  setColour(e.target.value)
+                }
                 style={fieldStyle}
               />
             </div>
 
             <div>
               <label style={labelStyle}>Size</label>
+
               <input
                 type="text"
                 value={size}
-                onChange={(e) => setSize(e.target.value)}
+                onChange={(e) =>
+                  setSize(e.target.value)
+                }
                 style={fieldStyle}
               />
             </div>
@@ -241,35 +323,98 @@ export default function EditProductPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(180px, 1fr))",
               gap: "16px",
               marginBottom: "20px",
             }}
           >
             <div>
-              <label style={labelStyle}>Cost Price (£)</label>
+              <label style={labelStyle}>
+                Stock Cost (£)
+              </label>
+
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
+                value={stockCost}
+                onChange={(e) =>
+                  setStockCost(e.target.value)
+                }
                 style={fieldStyle}
                 required
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Selling Price (£)</label>
+              <label style={labelStyle}>
+                Production Cost (£)
+              </label>
+
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={productionCost}
+                onChange={(e) =>
+                  setProductionCost(e.target.value)
+                }
+                style={fieldStyle}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                Selling Price (£)
+              </label>
+
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
+                onChange={(e) =>
+                  setSellingPrice(e.target.value)
+                }
                 style={fieldStyle}
                 required
               />
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "#f7f7f8",
+              padding: "18px",
+              borderRadius: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={{ color: "#666" }}>
+              Total Direct Cost
+            </div>
+
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: "700",
+                marginTop: "4px",
+              }}
+            >
+              £{totalDirectCost.toFixed(2)}
+            </div>
+
+            <div
+              style={{
+                color: "#777",
+                fontSize: "13px",
+                marginTop: "6px",
+              }}
+            >
+              Used for gross profit calculations. Stock value uses
+              Stock Cost only.
             </div>
           </div>
 
@@ -287,25 +432,35 @@ export default function EditProductPage() {
                 alignItems: "center",
                 gap: "10px",
                 fontWeight: "600",
-                marginBottom: trackStock ? "18px" : "0",
+                marginBottom: trackStock
+                  ? "18px"
+                  : "0",
               }}
             >
               <input
                 type="checkbox"
                 checked={trackStock}
-                onChange={(e) => setTrackStock(e.target.checked)}
+                onChange={(e) =>
+                  setTrackStock(e.target.checked)
+                }
               />
+
               Track stock for this product
             </label>
 
             {trackStock && (
               <div>
-                <label style={labelStyle}>Low Stock Warning Level</label>
+                <label style={labelStyle}>
+                  Low Stock Warning Level
+                </label>
+
                 <input
                   type="number"
                   min="0"
                   value={lowStockLevel}
-                  onChange={(e) => setLowStockLevel(e.target.value)}
+                  onChange={(e) =>
+                    setLowStockLevel(e.target.value)
+                  }
                   style={fieldStyle}
                 />
               </div>
@@ -324,8 +479,11 @@ export default function EditProductPage() {
               <input
                 type="checkbox"
                 checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+                onChange={(e) =>
+                  setActive(e.target.checked)
+                }
               />
+
               Active product
             </label>
           </div>
@@ -355,7 +513,9 @@ export default function EditProductPage() {
               color: "#fff",
               fontWeight: "700",
               fontSize: "16px",
-              cursor: saving ? "not-allowed" : "pointer",
+              cursor: saving
+                ? "not-allowed"
+                : "pointer",
             }}
           >
             {saving ? "Saving..." : "Save Changes"}
