@@ -9,19 +9,35 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 );
 
+function todayString() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  return new Date(now.getTime() - offset * 60000)
+    .toISOString()
+    .slice(0, 10);
+}
+
+function blankItem() {
+  return {
+    productId: "",
+    quantity: 1,
+    sellingPrice: "",
+    costPrice: "",
+  };
+}
+
 export default function RecordSalePage() {
   const [products, setProducts] = useState([]);
   const [accounts, setAccounts] = useState([]);
 
-  const [productId, setProductId] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [sellingPrice, setSellingPrice] = useState("");
-  const [costPrice, setCostPrice] = useState("");
+  const [saleDate, setSaleDate] = useState(todayString());
   const [customerReference, setCustomerReference] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
   const [salesChannel, setSalesChannel] = useState("Direct");
+  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
+  const [accountId, setAccountId] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [items, setItems] = useState([blankItem()]);
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -43,35 +59,84 @@ export default function RecordSalePage() {
       .order("account_name");
 
     if (productError) {
-      console.error(productError);
+      console.error("Products error:", productError);
     } else {
       setProducts(productData || []);
     }
 
     if (accountError) {
-      console.error(accountError);
+      console.error("Accounts error:", accountError);
     } else {
       setAccounts(accountData || []);
     }
   }
 
-  function selectProduct(id) {
-    setProductId(id);
-
-    const product = products.find((item) => item.id === id);
-
-    if (product) {
-      setSellingPrice(product.selling_price ?? "");
-      setCostPrice(product.cost_price ?? "");
-    }
+  function updateItem(index, field, value) {
+    setItems((currentItems) =>
+      currentItems.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
   }
+
+  function selectProduct(index, productId) {
+    const product = products.find(
+      (productItem) => productItem.id === productId
+    );
+
+    setItems((currentItems) =>
+      currentItems.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        return {
+          ...item,
+          productId,
+          sellingPrice: product?.selling_price ?? "",
+          costPrice: product?.cost_price ?? "",
+        };
+      })
+    );
+  }
+
+  function addItem() {
+    setItems((currentItems) => [...currentItems, blankItem()]);
+  }
+
+  function removeItem(index) {
+    if (items.length === 1) return;
+
+    setItems((currentItems) =>
+      currentItems.filter((_, itemIndex) => itemIndex !== index)
+    );
+  }
+
+  const saleTotal = items.reduce((sum, item) => {
+    return (
+      sum +
+      Number(item.quantity || 0) * Number(item.sellingPrice || 0)
+    );
+  }, 0);
+
+  const directCostTotal = items.reduce((sum, item) => {
+    return (
+      sum +
+      Number(item.quantity || 0) * Number(item.costPrice || 0)
+    );
+  }, 0);
+
+  const grossProfit = saleTotal - directCostTotal;
 
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
 
-    if (!productId) {
-      setMessage("Please select a product or service.");
+    if (!saleDate) {
+      setMessage("Please select a sale date.");
       return;
     }
 
@@ -80,17 +145,29 @@ export default function RecordSalePage() {
       return;
     }
 
-    if (Number(quantity) <= 0) {
-      setMessage("Quantity must be at least 1.");
+    const invalidItem = items.some(
+      (item) =>
+        !item.productId ||
+        Number(item.quantity) <= 0 ||
+        item.sellingPrice === "" ||
+        item.costPrice === ""
+    );
+
+    if (invalidItem) {
+      setMessage("Please complete every product line.");
       return;
     }
 
     setSaving(true);
 
+    const saleDateTime = new Date(
+      `${saleDate}T12:00:00`
+    ).toISOString();
+
     const { data: sale, error: saleError } = await supabase
       .from("sales")
       .insert({
-        sale_datetime: new Date().toISOString(),
+        sale_datetime: saleDateTime,
         customer_reference: customerReference || null,
         sales_channel: salesChannel,
         payment_method: paymentMethod,
@@ -101,49 +178,50 @@ export default function RecordSalePage() {
       .single();
 
     if (saleError) {
-      console.error(saleError);
+      console.error("Sale error:", saleError);
       setMessage(`Could not create sale: ${saleError.message}`);
       setSaving(false);
       return;
     }
 
-    const { error: itemError } = await supabase
+    const saleItems = items.map((item) => ({
+      sale_id: sale.id,
+      product_id: item.productId,
+      quantity: Number(item.quantity),
+      selling_price_each: Number(item.sellingPrice),
+      cost_price_each: Number(item.costPrice),
+    }));
+
+    const { error: itemsError } = await supabase
       .from("sale_items")
-      .insert({
-        sale_id: sale.id,
-        product_id: productId,
-        quantity: Number(quantity),
-        selling_price_each: Number(sellingPrice),
-        cost_price_each: Number(costPrice),
-      });
+      .insert(saleItems);
 
-    if (itemError) {
-      console.error(itemError);
+    if (itemsError) {
+      console.error("Sale items error:", itemsError);
 
-      // Remove the empty sale if its item failed.
-      await supabase.from("sales").delete().eq("id", sale.id);
+      await supabase
+        .from("sales")
+        .delete()
+        .eq("id", sale.id);
 
-      setMessage(`Could not add sale item: ${itemError.message}`);
+      setMessage(
+        `Could not add sale items: ${itemsError.message}`
+      );
       setSaving(false);
       return;
     }
 
-    const total = Number(quantity) * Number(sellingPrice);
+    setMessage(
+      `Sale recorded successfully — £${saleTotal.toFixed(2)}`
+    );
 
-    setMessage(`Sale recorded successfully — £${total.toFixed(2)}`);
-
-    setProductId("");
-    setQuantity(1);
-    setSellingPrice("");
-    setCostPrice("");
+    setItems([blankItem()]);
     setCustomerReference("");
     setNotes("");
+    setSaleDate(todayString());
 
     setSaving(false);
   }
-
-  const total =
-    Number(quantity || 0) * Number(sellingPrice || 0);
 
   const fieldStyle = {
     width: "100%",
@@ -152,6 +230,7 @@ export default function RecordSalePage() {
     borderRadius: "8px",
     fontSize: "16px",
     boxSizing: "border-box",
+    background: "#fff",
   };
 
   const labelStyle = {
@@ -171,7 +250,7 @@ export default function RecordSalePage() {
     >
       <div
         style={{
-          maxWidth: "700px",
+          maxWidth: "900px",
           margin: "0 auto",
         }}
       >
@@ -186,225 +265,470 @@ export default function RecordSalePage() {
           ← Back to Dashboard
         </Link>
 
-        <h1 style={{ fontSize: "36px", marginBottom: "8px" }}>
+        <h1
+          style={{
+            fontSize: "36px",
+            marginBottom: "8px",
+          }}
+        >
           Record Sale
         </h1>
 
-        <p style={{ color: "#666", marginBottom: "28px" }}>
-          Add a new Creations on the Coast sale.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
+        <p
           style={{
-            background: "#fff",
-            padding: "28px",
-            borderRadius: "14px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+            color: "#666",
+            marginBottom: "28px",
           }}
         >
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Product / Service</label>
+          Record one or more products as a single sale.
+        </p>
 
-            <select
-              value={productId}
-              onChange={(e) => selectProduct(e.target.value)}
-              style={fieldStyle}
-              required
-            >
-              <option value="">Select product...</option>
-
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.product_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        <form onSubmit={handleSubmit}>
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
+              background: "#fff",
+              padding: "28px",
+              borderRadius: "14px",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
               marginBottom: "20px",
             }}
           >
-            <div>
-              <label style={labelStyle}>Quantity</label>
-
-              <input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                style={fieldStyle}
-                required
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Selling Price Each (£)</label>
-
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
-                style={fieldStyle}
-                required
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Direct Cost Each (£)</label>
-
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={costPrice}
-              onChange={(e) => setCostPrice(e.target.value)}
-              style={fieldStyle}
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Customer / Reference</label>
-
-            <input
-              type="text"
-              value={customerReference}
-              onChange={(e) => setCustomerReference(e.target.value)}
-              placeholder="e.g. Luxury Roofing"
-              style={fieldStyle}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-              marginBottom: "20px",
-            }}
-          >
-            <div>
-              <label style={labelStyle}>Sales Channel</label>
-
-              <select
-                value={salesChannel}
-                onChange={(e) => setSalesChannel(e.target.value)}
-                style={fieldStyle}
-              >
-                <option>Direct</option>
-                <option>Shopify</option>
-                <option>Event</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={labelStyle}>Payment Method</label>
-
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                style={fieldStyle}
-              >
-                <option>Bank Transfer</option>
-                <option>Cash</option>
-                <option>Card</option>
-                <option>Shopify</option>
-                <option>Other</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <label style={labelStyle}>Money Paid Into</label>
-
-            <select
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              style={fieldStyle}
-              required
-            >
-              <option value="">Select account...</option>
-
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.account_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: "24px" }}>
-            <label style={labelStyle}>Notes</label>
-
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows="3"
-              style={fieldStyle}
-            />
-          </div>
-
-          <div
-            style={{
-              background: "#f7f7f8",
-              padding: "18px",
-              borderRadius: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <div style={{ color: "#666" }}>Sale Total</div>
+            <h2 style={{ marginTop: 0 }}>
+              Sale Details
+            </h2>
 
             <div
               style={{
-                fontSize: "30px",
-                fontWeight: "700",
-                marginTop: "4px",
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "16px",
+                marginBottom: "20px",
               }}
             >
-              £{total.toFixed(2)}
+              <div>
+                <label style={labelStyle}>
+                  Sale Date
+                </label>
+
+                <input
+                  type="date"
+                  value={saleDate}
+                  onChange={(e) =>
+                    setSaleDate(e.target.value)
+                  }
+                  style={fieldStyle}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  Customer / Reference
+                </label>
+
+                <input
+                  type="text"
+                  value={customerReference}
+                  onChange={(e) =>
+                    setCustomerReference(e.target.value)
+                  }
+                  placeholder="e.g. Luxury Roofing"
+                  style={fieldStyle}
+                />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "16px",
+                marginBottom: "20px",
+              }}
+            >
+              <div>
+                <label style={labelStyle}>
+                  Sales Channel
+                </label>
+
+                <select
+                  value={salesChannel}
+                  onChange={(e) =>
+                    setSalesChannel(e.target.value)
+                  }
+                  style={fieldStyle}
+                >
+                  <option>Direct</option>
+                  <option>Shopify</option>
+                  <option>Event</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  Payment Method
+                </label>
+
+                <select
+                  value={paymentMethod}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value)
+                  }
+                  style={fieldStyle}
+                >
+                  <option>Bank Transfer</option>
+                  <option>Cash</option>
+                  <option>Card</option>
+                  <option>Shopify</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  Money Paid Into
+                </label>
+
+                <select
+                  value={accountId}
+                  onChange={(e) =>
+                    setAccountId(e.target.value)
+                  }
+                  style={fieldStyle}
+                  required
+                >
+                  <option value="">
+                    Select account...
+                  </option>
+
+                  {accounts.map((account) => (
+                    <option
+                      key={account.id}
+                      value={account.id}
+                    >
+                      {account.account_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Notes</label>
+
+              <textarea
+                value={notes}
+                onChange={(e) =>
+                  setNotes(e.target.value)
+                }
+                rows="3"
+                style={fieldStyle}
+              />
             </div>
           </div>
 
-          {message && (
-            <div
+          <div
+            style={{
+              background: "#fff",
+              padding: "28px",
+              borderRadius: "14px",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              marginBottom: "20px",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>
+              Products / Services
+            </h2>
+
+            {items.map((item, index) => {
+              const lineTotal =
+                Number(item.quantity || 0) *
+                Number(item.sellingPrice || 0);
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    padding: "20px",
+                    background: "#f7f7f8",
+                    borderRadius: "10px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "14px",
+                    }}
+                  >
+                    <strong>
+                      Item {index + 1}
+                    </strong>
+
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeItem(index)
+                        }
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: "14px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        gridColumn: "span 2",
+                      }}
+                    >
+                      <label style={labelStyle}>
+                        Product / Service
+                      </label>
+
+                      <select
+                        value={item.productId}
+                        onChange={(e) =>
+                          selectProduct(
+                            index,
+                            e.target.value
+                          )
+                        }
+                        style={fieldStyle}
+                        required
+                      >
+                        <option value="">
+                          Select product...
+                        </option>
+
+                        {products.map((product) => (
+                          <option
+                            key={product.id}
+                            value={product.id}
+                          >
+                            {product.product_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>
+                        Qty
+                      </label>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "quantity",
+                            e.target.value
+                          )
+                        }
+                        style={fieldStyle}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>
+                        Price Each (£)
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.sellingPrice}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "sellingPrice",
+                            e.target.value
+                          )
+                        }
+                        style={fieldStyle}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>
+                        Cost Each (£)
+                      </label>
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.costPrice}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "costPrice",
+                            e.target.value
+                          )
+                        }
+                        style={fieldStyle}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>
+                        Line Total
+                      </label>
+
+                      <div
+                        style={{
+                          ...fieldStyle,
+                          background: "#eee",
+                          fontWeight: "700",
+                        }}
+                      >
+                        £{lineTotal.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={addItem}
               style={{
-                marginBottom: "18px",
-                padding: "12px",
-                background: "#f2f2f2",
+                padding: "12px 18px",
+                border: "1px solid #ccc",
                 borderRadius: "8px",
+                background: "#fff",
+                fontWeight: "600",
+                cursor: "pointer",
               }}
             >
-              {message}
-            </div>
-          )}
+              + Add Another Item
+            </button>
+          </div>
 
-          <button
-            type="submit"
-            disabled={saving}
+          <div
             style={{
-              width: "100%",
-              padding: "15px",
-              border: "none",
-              borderRadius: "9px",
-              background: "#111",
-              color: "#fff",
-              fontSize: "16px",
-              fontWeight: "700",
-              cursor: saving ? "not-allowed" : "pointer",
+              background: "#fff",
+              padding: "28px",
+              borderRadius: "14px",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
             }}
           >
-            {saving ? "Saving..." : "Record Sale"}
-          </button>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "18px",
+                marginBottom: "24px",
+              }}
+            >
+              <div>
+                <div style={{ color: "#666" }}>
+                  Sale Total
+                </div>
+                <div
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: "700",
+                  }}
+                >
+                  £{saleTotal.toFixed(2)}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ color: "#666" }}>
+                  Direct Cost
+                </div>
+                <div
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: "700",
+                  }}
+                >
+                  £{directCostTotal.toFixed(2)}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ color: "#666" }}>
+                  Gross Profit
+                </div>
+                <div
+                  style={{
+                    fontSize: "30px",
+                    fontWeight: "700",
+                  }}
+                >
+                  £{grossProfit.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {message && (
+              <div
+                style={{
+                  padding: "14px",
+                  background: "#f2f2f2",
+                  borderRadius: "8px",
+                  marginBottom: "18px",
+                }}
+              >
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={saving}
+              style={{
+                width: "100%",
+                padding: "16px",
+                border: "none",
+                borderRadius: "9px",
+                background: "#111",
+                color: "#fff",
+                fontSize: "17px",
+                fontWeight: "700",
+                cursor: saving
+                  ? "not-allowed"
+                  : "pointer",
+              }}
+            >
+              {saving
+                ? "Recording Sale..."
+                : `Record Sale — £${saleTotal.toFixed(
+                    2
+                  )}`}
+            </button>
+          </div>
         </form>
       </div>
     </main>
