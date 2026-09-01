@@ -25,7 +25,7 @@ export default function ProductsPage() {
     const { data: stockData, error: stockError } = await supabase
       .from("current_stock")
       .select(
-        "product_id, product_name, sku, category, cost_price, selling_price, low_stock_level, active, current_stock, stock_value"
+        "product_id, product_name, sku, category, stock_cost, production_cost, cost_price, selling_price, low_stock_level, active, current_stock, stock_value"
       )
       .order("product_name");
 
@@ -115,7 +115,7 @@ export default function ProductsPage() {
     >
       <div
         style={{
-          maxWidth: "1350px",
+          maxWidth: "1500px",
           margin: "0 auto",
         }}
       >
@@ -157,7 +157,7 @@ export default function ProductsPage() {
                 margin: 0,
               }}
             >
-              View products, variants, prices and current stock levels.
+              View products, variants, costs, prices and stock levels.
             </p>
           </div>
 
@@ -231,7 +231,7 @@ export default function ProductsPage() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: "1250px",
+                minWidth: "1450px",
               }}
             >
               <thead>
@@ -246,12 +246,15 @@ export default function ProductsPage() {
                   <Th>Size</Th>
                   <Th>SKU</Th>
                   <Th>Category</Th>
-                  <Th>Cost</Th>
+
+                  <Th>Stock Cost</Th>
+                  <Th>Production Cost</Th>
+                  <Th>Total Cost</Th>
                   <Th>Selling Price</Th>
+
                   <Th>Current Stock</Th>
-                  <Th>Low Stock Level</Th>
+                  <Th>Low Stock</Th>
                   <Th>Stock Value</Th>
-                  <Th>Track Stock</Th>
                   <Th>Status</Th>
                   <Th>Actions</Th>
                 </tr>
@@ -259,10 +262,17 @@ export default function ProductsPage() {
 
               <tbody>
                 {products.map((product) => {
+                  const currentStock = Number(
+                    product.current_stock || 0
+                  );
+
+                  const lowStockLevel = Number(
+                    product.low_stock_level || 0
+                  );
+
                   const isLowStock =
                     product.track_stock &&
-                    Number(product.current_stock || 0) <=
-                      Number(product.low_stock_level || 0);
+                    currentStock <= lowStockLevel;
 
                   return (
                     <tr
@@ -277,27 +287,35 @@ export default function ProductsPage() {
                         </strong>
                       </Td>
 
-                      <Td>
-                        {product.colour || "—"}
-                      </Td>
+                      <Td>{product.colour || "—"}</Td>
+
+                      <Td>{product.size || "—"}</Td>
+
+                      <Td>{product.sku || "—"}</Td>
+
+                      <Td>{product.category || "—"}</Td>
 
                       <Td>
-                        {product.size || "—"}
-                      </Td>
-
-                      <Td>
-                        {product.sku || "—"}
-                      </Td>
-
-                      <Td>
-                        {product.category || "—"}
+                        £
+                        {Number(
+                          product.stock_cost || 0
+                        ).toFixed(2)}
                       </Td>
 
                       <Td>
                         £
                         {Number(
-                          product.cost_price || 0
+                          product.production_cost || 0
                         ).toFixed(2)}
+                      </Td>
+
+                      <Td>
+                        <strong>
+                          £
+                          {Number(
+                            product.cost_price || 0
+                          ).toFixed(2)}
+                        </strong>
                       </Td>
 
                       <Td>
@@ -309,9 +327,7 @@ export default function ProductsPage() {
 
                       <Td>
                         {product.track_stock
-                          ? Number(
-                              product.current_stock || 0
-                            )
+                          ? currentStock
                           : "N/A"}
                       </Td>
 
@@ -324,7 +340,7 @@ export default function ProductsPage() {
                                 : "400",
                             }}
                           >
-                            {product.low_stock_level}
+                            {lowStockLevel}
                             {isLowStock
                               ? " — LOW"
                               : ""}
@@ -340,12 +356,6 @@ export default function ProductsPage() {
                               product.stock_value || 0
                             ).toFixed(2)}`
                           : "N/A"}
-                      </Td>
-
-                      <Td>
-                        {product.track_stock
-                          ? "Yes"
-                          : "No"}
                       </Td>
 
                       <Td>
@@ -401,6 +411,18 @@ export default function ProductsPage() {
               </tbody>
             </table>
           )}
+        </div>
+
+        <div
+          style={{
+            marginTop: "16px",
+            color: "#666",
+            fontSize: "13px",
+          }}
+        >
+          Stock Value is calculated using Stock Cost only.
+          Total Cost includes production costs and is used for
+          profitability.
         </div>
       </div>
     </main>
