@@ -114,7 +114,7 @@ export default function ProductsPage() {
     >
       <div
         style={{
-          maxWidth: "1300px",
+          maxWidth: "1350px",
           margin: "0 auto",
         }}
       >
@@ -230,7 +230,7 @@ export default function ProductsPage() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: "1100px",
+                minWidth: "1200px",
               }}
             >
               <thead>
@@ -252,6 +252,7 @@ export default function ProductsPage() {
                   <Th>Stock Value</Th>
                   <Th>Track Stock</Th>
                   <Th>Status</Th>
+                  <Th>Actions</Th>
                 </tr>
               </thead>
 
@@ -332,6 +333,24 @@ export default function ProductsPage() {
 
                       <Td>
                         {product.active ? "Active" : "Inactive"}
+                      </Td>
+
+                      <Td>
+                        <Link
+                          href={`/products/new?copy=${product.product_id}`}
+                          style={{
+                            display: "inline-block",
+                            padding: "8px 11px",
+                            border: "1px solid #ccc",
+                            borderRadius: "7px",
+                            color: "#111",
+                            textDecoration: "none",
+                            fontWeight: "600",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          + Add Variant
+                        </Link>
                       </Td>
                     </tr>
                   );
