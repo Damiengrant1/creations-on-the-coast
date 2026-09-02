@@ -17,6 +17,7 @@ const buttons = [
   ["Events", "/events"],
   ["Expenses", "/expenses"],
   ["Cash Flow", "/cash-flow"],
+  ["Manage Transactions", "/transactions"],
   ["Reports", "/reports"],
 ];
 
