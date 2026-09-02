@@ -20,6 +20,35 @@ function yearStart() {
   return `${now.getFullYear()}-01-01`;
 }
 
+function dateOffset(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function reportRange(preset) {
+  const today = new Date();
+  const yesterday = dateOffset(today, -1);
+  const dayFromMonday = (today.getDay() + 6) % 7;
+  const thisMonday = dateOffset(today, -dayFromMonday);
+  const lastMonday = dateOffset(thisMonday, -7);
+  const lastSunday = dateOffset(thisMonday, -1);
+  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+
+  const ranges = {
+    today: [today, today],
+    yesterday: [yesterday, yesterday],
+    thisWeek: [thisMonday, today],
+    lastWeek: [lastMonday, lastSunday],
+    thisMonth: [thisMonthStart, today],
+    lastMonth: [lastMonthStart, lastMonthEnd],
+  };
+
+  return ranges[preset].map(localDate);
+}
+
 function money(value) {
   return `£${Number(value || 0).toFixed(2)}`;
 }
@@ -170,6 +199,12 @@ export default function ReportsPage() {
     [stock]
   );
 
+  function applyDateShortcut(preset) {
+    const [from, to] = reportRange(preset);
+    setFromDate(from);
+    setToDate(to);
+  }
+
   function exportCsv() {
     const rows = [
       ["Creations on the Coast Profitability Report"],
@@ -210,10 +245,21 @@ export default function ReportsPage() {
           <button type="button" onClick={exportCsv} disabled={loading || !!error} style={buttonStyle}>Download CSV</button>
         </div>
 
-        <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "22px" }}>
-          <Field label="From"><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} style={fieldStyle} /></Field>
-          <Field label="To"><input type="date" value={toDate} min={fromDate} onChange={(e) => setToDate(e.target.value)} style={fieldStyle} /></Field>
-          <div style={{ display: "flex", alignItems: "flex-end" }}><button type="button" onClick={() => { setFromDate(yearStart()); setToDate(localDate()); }} style={{ ...buttonStyle, width: "100%" }}>This Year</button></div>
+        <div style={{ ...cardStyle, marginBottom: "22px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "18px" }}>
+            <Field label="From"><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} style={fieldStyle} /></Field>
+            <Field label="To"><input type="date" value={toDate} min={fromDate} onChange={(e) => setToDate(e.target.value)} style={fieldStyle} /></Field>
+          </div>
+          <div style={{ color: "#666", fontSize: "13px", fontWeight: "600", marginBottom: "9px" }}>Quick dates</div>
+          <div style={{ display: "flex", gap: "9px", flexWrap: "wrap" }}>
+            <Shortcut onClick={() => applyDateShortcut("today")}>Today</Shortcut>
+            <Shortcut onClick={() => applyDateShortcut("yesterday")}>Yesterday</Shortcut>
+            <Shortcut onClick={() => applyDateShortcut("thisWeek")}>This Week</Shortcut>
+            <Shortcut onClick={() => applyDateShortcut("lastWeek")}>Last Week</Shortcut>
+            <Shortcut onClick={() => applyDateShortcut("thisMonth")}>This Month</Shortcut>
+            <Shortcut onClick={() => applyDateShortcut("lastMonth")}>Last Month</Shortcut>
+            <Shortcut onClick={() => { setFromDate(yearStart()); setToDate(localDate()); }}>This Year</Shortcut>
+          </div>
         </div>
 
         {error && <div style={errorStyle}>{error}</div>}
@@ -267,6 +313,7 @@ function aggregate(items, makeRow) {
 }
 
 function Field({ label, children }) { return <div><label style={{ display: "block", fontWeight: "600", marginBottom: "6px" }}>{label}</label>{children}</div>; }
+function Shortcut({ onClick, children }) { return <button type="button" onClick={onClick} style={{ padding: "9px 13px", border: "1px solid #ccc", borderRadius: "8px", background: "#fff", color: "#111", fontWeight: "700", cursor: "pointer" }}>{children}</button>; }
 function Summary({ title, value, note, featured }) { return <div style={{ ...cardStyle, background: featured ? "#111" : "#fff", color: featured ? "#fff" : "#111" }}><div style={{ color: featured ? "#ccc" : "#666", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "27px", fontWeight: "700" }}>{value}</div>{note && <div style={{ color: featured ? "#bbb" : "#777", fontSize: "12px", marginTop: "7px" }}>{note}</div>}</div>; }
 function ReportTable({ title, subtitle, empty, headings, children }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
