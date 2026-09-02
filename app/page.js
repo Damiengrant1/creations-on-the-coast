@@ -82,7 +82,7 @@ export default async function HomePage() {
     },
     {
       label: "Cash Flow",
-      href: "#",
+      href: "/cash-flow",
     },
     {
       label: "Reports",
