@@ -86,7 +86,7 @@ export default async function HomePage() {
     },
     {
       label: "Reports",
-      href: "#",
+      href: "/reports",
     },
   ];
 
