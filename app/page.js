@@ -74,7 +74,7 @@ export default async function HomePage() {
     },
     {
       label: "Events",
-      href: "#",
+      href: "/events",
     },
     {
       label: "Expenses",
