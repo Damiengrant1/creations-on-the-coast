@@ -32,6 +32,7 @@ function todayString() {
 
 export default function ExpensesPage() {
   const [accounts, setAccounts] = useState([]);
+  const [events, setEvents] = useState([]);
   const [recentExpenses, setRecentExpenses] = useState([]);
 
   const [expenseDate, setExpenseDate] = useState(todayString());
@@ -41,6 +42,7 @@ export default function ExpensesPage() {
   const [amount, setAmount] = useState("");
   const [supplier, setSupplier] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [eventId, setEventId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -67,6 +69,12 @@ export default function ExpensesPage() {
       .eq("active", true)
       .order("account_name");
 
+    const { data: eventData, error: eventError } = await supabase
+      .from("events")
+      .select("id, event_name, start_date, status")
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: false });
+
     const { data: expenseData, error: expenseError } = await supabase
       .from("expenses")
       .select(
@@ -76,18 +84,20 @@ export default function ExpensesPage() {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (accountError || expenseError) {
-      const error = accountError || expenseError;
+    if (accountError || eventError || expenseError) {
+      const error = accountError || eventError || expenseError;
       console.error("Could not load expenses page:", error);
       setMessage(`Could not load the page: ${error.message}`);
       setMessageType("error");
       setAccounts([]);
+      setEvents([]);
       setRecentExpenses([]);
       setLoading(false);
       return;
     }
 
     setAccounts(accountData || []);
+    setEvents(eventData || []);
     setRecentExpenses(expenseData || []);
     setLoading(false);
   }
@@ -151,7 +161,7 @@ export default function ExpensesPage() {
       category: finalCategory,
       description: description.trim() || null,
       amount: Number(amount),
-      event_id: null,
+      event_id: eventId || null,
       supplier: supplier.trim() || null,
       account_id: accountId,
       reference: reference.trim() || null,
@@ -180,6 +190,7 @@ export default function ExpensesPage() {
     setAmount("");
     setSupplier("");
     setAccountId("");
+    setEventId("");
     setReference("");
     setNotes("");
     setSaving(false);
@@ -370,6 +381,22 @@ export default function ExpensesPage() {
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
                           {account.account_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={labelStyle}>Event</label>
+                    <select
+                      value={eventId}
+                      onChange={(event) => setEventId(event.target.value)}
+                      style={fieldStyle}
+                    >
+                      <option value="">Not linked to an event</option>
+                      {events.map((event) => (
+                        <option key={event.id} value={event.id}>
+                          {event.event_name} — {event.start_date}
                         </option>
                       ))}
                     </select>
