@@ -29,12 +29,14 @@ function blankItem() {
 export default function RecordSalePage() {
   const [products, setProducts] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [events, setEvents] = useState([]);
 
   const [saleDate, setSaleDate] = useState(todayString());
   const [customerReference, setCustomerReference] = useState("");
   const [salesChannel, setSalesChannel] = useState("Direct");
   const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
   const [accountId, setAccountId] = useState("");
+  const [eventId, setEventId] = useState("");
   const [notes, setNotes] = useState("");
 
   const [items, setItems] = useState([blankItem()]);
@@ -58,6 +60,12 @@ export default function RecordSalePage() {
       .select("id, account_name")
       .order("account_name");
 
+    const { data: eventData, error: eventError } = await supabase
+      .from("events")
+      .select("id, event_name, start_date, status")
+      .neq("status", "cancelled")
+      .order("start_date", { ascending: false });
+
     if (productError) {
       console.error("Products error:", productError);
     } else {
@@ -68,6 +76,12 @@ export default function RecordSalePage() {
       console.error("Accounts error:", accountError);
     } else {
       setAccounts(accountData || []);
+    }
+
+    if (eventError) {
+      console.error("Events error:", eventError);
+    } else {
+      setEvents(eventData || []);
     }
   }
 
@@ -172,6 +186,7 @@ export default function RecordSalePage() {
         sales_channel: salesChannel,
         payment_method: paymentMethod,
         account_id: accountId,
+        event_id: eventId || null,
         notes: notes || null,
       })
       .select("id")
@@ -217,6 +232,7 @@ export default function RecordSalePage() {
 
     setItems([blankItem()]);
     setCustomerReference("");
+    setEventId("");
     setNotes("");
     setSaleDate(todayString());
 
@@ -384,6 +400,23 @@ export default function RecordSalePage() {
                   <option>Card</option>
                   <option>Shopify</option>
                   <option>Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Event</label>
+
+                <select
+                  value={eventId}
+                  onChange={(e) => setEventId(e.target.value)}
+                  style={fieldStyle}
+                >
+                  <option value="">Not linked to an event</option>
+                  {events.map((event) => (
+                    <option key={event.id} value={event.id}>
+                      {event.event_name} — {event.start_date}
+                    </option>
+                  ))}
                 </select>
               </div>
 
