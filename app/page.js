@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-);
+import { supabase } from "../lib/supabase";
 
 const buttons = [
   ["Record Sale", "/record-sale"],
@@ -20,6 +15,21 @@ const buttons = [
   ["Manage Transactions", "/transactions"],
   ["Reports", "/reports"],
 ];
+
+const wait = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function isJwtTimingError(error) {
+  return error?.message?.toLowerCase().includes("jwt issued at future");
+}
+
+async function fetchDashboardFigures() {
+  return Promise.all([
+    supabase.from("sale_totals").select("total_sales, gross_profit"),
+    supabase.from("expenses").select("amount"),
+    supabase.from("account_balances").select("current_balance"),
+  ]);
+}
 
 export default function HomePage() {
   const [figures, setFigures] = useState({
@@ -37,20 +47,26 @@ export default function HomePage() {
   }, []);
 
   async function loadDashboard() {
-    const [salesResult, expensesResult, accountsResult] = await Promise.all([
-      supabase.from("sale_totals").select("total_sales, gross_profit"),
-      supabase.from("expenses").select("amount"),
-      supabase.from("account_balances").select("current_balance"),
-    ]);
+    setLoading(true);
+    setError("");
 
-    const firstError =
-      salesResult.error || expensesResult.error || accountsResult.error;
+    let results = await fetchDashboardFigures();
+    let firstError = results.find((result) => result.error)?.error;
+
+    if (isJwtTimingError(firstError)) {
+      await supabase.auth.refreshSession();
+      await wait(3000);
+      results = await fetchDashboardFigures();
+      firstError = results.find((result) => result.error)?.error;
+    }
 
     if (firstError) {
       setError(`Could not load dashboard figures: ${firstError.message}`);
       setLoading(false);
       return;
     }
+
+    const [salesResult, expensesResult, accountsResult] = results;
 
     const sales = (salesResult.data || []).reduce(
       (sum, row) => sum + Number(row.total_sales || 0),
@@ -91,7 +107,14 @@ export default function HomePage() {
           </p>
         </div>
 
-        {error && <div style={errorStyle}>{error}</div>}
+        {error && (
+          <div style={errorStyle}>
+            <div>{error}</div>
+            <button type="button" onClick={loadDashboard} style={retryStyle}>
+              Try Again
+            </button>
+          </div>
+        )}
 
         <div style={summaryGridStyle}>
           <SummaryCard title="Total Sales" value={loading ? "..." : money(figures.sales)} />
@@ -114,9 +137,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div style={{ marginTop: "18px", color: "#777", fontSize: "13px", textAlign: "center" }}>
-          Creations on the Coast Ltd
-        </div>
+        <div style={footerStyle}>Creations on the Coast Ltd</div>
       </div>
     </main>
   );
@@ -137,10 +158,78 @@ function SummaryCard({ title, value }) {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const summaryGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "32px" };
-const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
-const managementStyle = { background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
-const buttonGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" };
-const linkStyle = { padding: "16px", borderRadius: "9px", background: "#111", color: "#fff", textAlign: "center", textDecoration: "none", fontWeight: "700" };
-const errorStyle = { padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: "#fff0f0", color: "#9b1c1c", border: "1px solid #f1c1c1", fontWeight: "600" };
+const pageStyle = {
+  minHeight: "100vh",
+  background: "#f7f7f8",
+  padding: "40px 20px",
+  fontFamily: "Arial, sans-serif",
+};
+
+const summaryGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: "16px",
+  marginBottom: "32px",
+};
+
+const cardStyle = {
+  background: "#fff",
+  padding: "22px",
+  borderRadius: "12px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+};
+
+const managementStyle = {
+  background: "#fff",
+  padding: "28px",
+  borderRadius: "14px",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+};
+
+const buttonGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: "14px",
+};
+
+const linkStyle = {
+  padding: "16px",
+  borderRadius: "9px",
+  background: "#111",
+  color: "#fff",
+  textAlign: "center",
+  textDecoration: "none",
+  fontWeight: "700",
+};
+
+const errorStyle = {
+  padding: "14px 16px",
+  marginBottom: "20px",
+  borderRadius: "9px",
+  background: "#fff0f0",
+  color: "#9b1c1c",
+  border: "1px solid #f1c1c1",
+  fontWeight: "600",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+};
+
+const retryStyle = {
+  border: "1px solid #9b1c1c",
+  borderRadius: "7px",
+  background: "#fff",
+  color: "#9b1c1c",
+  padding: "8px 12px",
+  fontWeight: "700",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const footerStyle = {
+  marginTop: "18px",
+  color: "#777",
+  fontSize: "13px",
+  textAlign: "center",
+};
