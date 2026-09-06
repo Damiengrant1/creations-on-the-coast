@@ -86,6 +86,16 @@ export default function ProductsPage() {
       0
     );
 
+    const potentialSalesValue = products.reduce(
+      (sum, product) =>
+        sum +
+        (product.track_stock
+          ? Number(product.current_stock || 0) *
+            Number(product.selling_price || 0)
+          : 0),
+      0
+    );
+
     const trackedProducts = products.filter(
       (product) => product.track_stock
     ).length;
@@ -99,6 +109,7 @@ export default function ProductsPage() {
 
     return {
       stockValue,
+      potentialSalesValue,
       trackedProducts,
       lowStock,
     };
@@ -203,6 +214,11 @@ export default function ProductsPage() {
           <SummaryCard
             title="Stock Value"
             value={`£${totals.stockValue.toFixed(2)}`}
+          />
+
+          <SummaryCard
+            title="Potential Sales Value"
+            value={`£${totals.potentialSalesValue.toFixed(2)}`}
           />
         </div>
 
@@ -421,8 +437,9 @@ export default function ProductsPage() {
           }}
         >
           Stock Value is calculated using Stock Cost only.
-          Total Cost includes production costs and is used for
-          profitability.
+          Potential Sales Value is current stock multiplied by
+          the normal selling price. Total Cost includes production
+          costs and is used for profitability.
         </div>
       </div>
     </main>
