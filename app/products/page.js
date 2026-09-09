@@ -13,6 +13,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadProducts();
@@ -114,6 +115,26 @@ export default function ProductsPage() {
       lowStock,
     };
   }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    if (!search) {
+      return products;
+    }
+
+    return products.filter((product) =>
+      [
+        product.product_name,
+        product.colour,
+        product.size,
+        product.sku,
+        product.category,
+      ].some((value) =>
+        String(value || "").toLowerCase().includes(search)
+      )
+    );
+  }, [products, searchTerm]);
 
   return (
     <main
@@ -225,6 +246,86 @@ export default function ProductsPage() {
         <div
           style={{
             background: "#fff",
+            padding: "18px",
+            borderRadius: "12px",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+            marginBottom: "16px",
+          }}
+        >
+          <label
+            htmlFor="product-search"
+            style={{
+              display: "block",
+              fontWeight: "700",
+              marginBottom: "8px",
+            }}
+          >
+            Search Products
+          </label>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "center",
+            }}
+          >
+            <input
+              id="product-search"
+              type="search"
+              value={searchTerm}
+              onChange={(event) =>
+                setSearchTerm(event.target.value)
+              }
+              placeholder="Search by product, colour, size, SKU or category"
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                border: "1px solid #ccc",
+                borderRadius: "8px",
+                fontSize: "16px",
+              }}
+            />
+
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                style={{
+                  padding: "12px 16px",
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  background: "#fff",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {searchTerm.trim() && (
+            <div
+              style={{
+                marginTop: "9px",
+                color: "#666",
+                fontSize: "14px",
+              }}
+            >
+              {filteredProducts.length}{" "}
+              {filteredProducts.length === 1
+                ? "product"
+                : "products"}{" "}
+              found
+            </div>
+          )}
+        </div>
+
+        <div
+          style={{
+            background: "#fff",
             borderRadius: "14px",
             boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
             overflowX: "auto",
@@ -241,6 +342,10 @@ export default function ProductsPage() {
           ) : products.length === 0 ? (
             <div style={{ padding: "28px" }}>
               No products found.
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div style={{ padding: "28px" }}>
+              No products match your search.
             </div>
           ) : (
             <table
@@ -277,7 +382,7 @@ export default function ProductsPage() {
               </thead>
 
               <tbody>
-                {products.map((product) => {
+                {filteredProducts.map((product) => {
                   const currentStock = Number(
                     product.current_stock || 0
                   );
