@@ -69,17 +69,38 @@ export default function AddJobPage() {
   }, []);
 
   async function loadProducts() {
-    const { data, error } = await supabase
-      .from("products")
-      .select("id, product_name, sku, colour, size, selling_price")
-      .eq("active", true)
-      .order("product_name");
+    const [productsResult, stockResult] = await Promise.all([
+      supabase
+        .from("products")
+        .select(
+          "id, product_name, sku, colour, size, selling_price, track_stock"
+        )
+        .eq("active", true)
+        .order("product_name"),
+      supabase
+        .from("current_stock")
+        .select("product_id, current_stock"),
+    ]);
+
+    const error = productsResult.error || stockResult.error;
 
     if (error) {
-      console.error("Products error:", error);
-      setMessage(`Could not load products: ${error.message}`);
+      console.error("Products or stock error:", error);
+      setMessage(`Could not load products or stock: ${error.message}`);
     } else {
-      setProducts(data || []);
+      const stockByProduct = new Map(
+        (stockResult.data || []).map((stock) => [
+          stock.product_id,
+          Number(stock.current_stock || 0),
+        ])
+      );
+
+      setProducts(
+        (productsResult.data || []).map((product) => ({
+          ...product,
+          currentStock: stockByProduct.get(product.id) || 0,
+        }))
+      );
     }
   }
 
@@ -118,6 +139,42 @@ export default function AddJobPage() {
     setItems((currentItems) =>
       currentItems.filter((_, itemIndex) => itemIndex !== index)
     );
+  }
+
+  function getItemStockStatus(item) {
+    if (!item.productId) {
+      return {
+        type: "check",
+        text: "Select a catalogue product to check its stock.",
+      };
+    }
+
+    const product = products.find((entry) => entry.id === item.productId);
+
+    if (!product) {
+      return { type: "check", text: "Stock information is unavailable." };
+    }
+
+    if (!product.track_stock) {
+      return { type: "info", text: "Stock is not tracked for this product." };
+    }
+
+    const requiredQuantity = items
+      .filter((entry) => entry.productId === item.productId)
+      .reduce((total, entry) => total + Number(entry.quantity || 0), 0);
+    const availableQuantity = Number(product.currentStock || 0);
+
+    if (availableQuantity >= requiredQuantity) {
+      return {
+        type: "yes",
+        text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. Enough stock available.`,
+      };
+    }
+
+    return {
+      type: "no",
+      text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
+    };
   }
 
   const calculatedTotal = useMemo(
@@ -287,7 +344,10 @@ export default function AddJobPage() {
           </Section>
 
           <Section title="Items Required">
-            {items.map((item, index) => (
+            {items.map((item, index) => {
+              const stockStatus = getItemStockStatus(item);
+
+              return (
               <div key={index} style={itemCardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
                   <strong>Item {index + 1}</strong>
@@ -316,11 +376,16 @@ export default function AddJobPage() {
                   </Field>
                 </div>
 
+                <div style={stockMessageStyle(stockStatus.type)}>
+                  {stockStatus.text}
+                </div>
+
                 <Field label="Personalisation / Item Instructions">
                   <textarea value={item.personalisation} onChange={(e) => updateItem(index, "personalisation", e.target.value)} style={{ ...fieldStyle, minHeight: "80px", resize: "vertical" }} placeholder="Names, sizes, colours, wording or design details" />
                 </Field>
               </div>
-            ))}
+              );
+            })}
 
             <button type="button" onClick={addItem} style={secondaryButtonStyle}>+ Add Another Item</button>
           </Section>
@@ -367,6 +432,26 @@ function Field({ label, children }) {
       {children}
     </div>
   );
+}
+
+function stockMessageStyle(type) {
+  const colours = {
+    yes: { background: "#e8f7ed", color: "#176b35", border: "#b8dfc3" },
+    no: { background: "#fff0f0", color: "#9b1c1c", border: "#efb3b3" },
+    check: { background: "#fff8df", color: "#6b4e00", border: "#ead99f" },
+    info: { background: "#eef4ff", color: "#254f87", border: "#c8d7ef" },
+  };
+  const colour = colours[type] || colours.check;
+
+  return {
+    background: colour.background,
+    color: colour.color,
+    border: `1px solid ${colour.border}`,
+    borderRadius: "8px",
+    padding: "10px 12px",
+    margin: "0 0 16px",
+    fontWeight: "700",
+  };
 }
 
 const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
