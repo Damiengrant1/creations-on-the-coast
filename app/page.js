@@ -30,7 +30,10 @@ async function fetchDashboardFigures() {
   return Promise.all([
     supabase.from("sale_totals").select("total_sales, gross_profit"),
     supabase.from("expenses").select("amount"),
-    supabase.from("account_balances").select("current_balance"),
+    supabase
+      .from("account_balances")
+      .select("account_id, account_name, account_type, current_balance")
+      .order("account_name"),
   ]);
 }
 
@@ -42,6 +45,7 @@ export default function HomePage() {
     expenses: 0,
     netProfit: 0,
     cash: 0,
+    accounts: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -95,6 +99,7 @@ export default function HomePage() {
       expenses,
       netProfit: grossProfit - expenses,
       cash,
+      accounts: accountsResult.data || [],
     });
     setLoading(false);
   }
@@ -128,6 +133,31 @@ export default function HomePage() {
           <SummaryCard title="Cash Balance" value={loading ? "..." : money(figures.cash)} />
         </div>
 
+        <div style={{ ...managementStyle, marginBottom: "32px" }}>
+          <h2 style={{ margin: "0 0 8px", fontSize: "24px" }}>
+            Money Held by Account
+          </h2>
+          <p style={{ color: "#666", margin: "0 0 20px" }}>
+            Current balance in each business account.
+          </p>
+          <div style={summaryGridStyle}>
+            {loading ? (
+              <SummaryCard title="Accounts" value="..." />
+            ) : figures.accounts.length === 0 ? (
+              <div style={{ color: "#666" }}>No accounts have been added yet.</div>
+            ) : (
+              figures.accounts.map((account) => (
+                <SummaryCard
+                  key={account.account_id}
+                  title={account.account_name}
+                  value={money(account.current_balance)}
+                  detail={account.account_type}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
         <div style={managementStyle}>
           <h2 style={{ margin: "0 0 20px", fontSize: "24px" }}>
             Business Management
@@ -151,13 +181,18 @@ function money(value) {
   return `£${Number(value || 0).toFixed(2)}`;
 }
 
-function SummaryCard({ title, value }) {
+function SummaryCard({ title, value, detail = "" }) {
   return (
     <div style={cardStyle}>
       <div style={{ color: "#666", marginBottom: "8px", fontSize: "14px" }}>
         {title}
       </div>
       <div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div>
+      {detail && (
+        <div style={{ color: "#777", marginTop: "7px", fontSize: "13px" }}>
+          {detail}
+        </div>
+      )}
     </div>
   );
 }
