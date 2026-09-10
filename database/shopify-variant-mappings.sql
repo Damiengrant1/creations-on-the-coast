@@ -6,7 +6,8 @@ create table public.shopify_variant_mappings (
   shopify_product_id text not null check (shopify_product_id ~ '^gid://shopify/Product/[0-9]+$'),
   shopify_product_title text not null,
   shopify_variant_title text not null,
-  shopify_status text not null check (shopify_status in ('ACTIVE', 'DRAFT', 'ARCHIVED')),
+  shopify_status text not null check (shopify_status in ('ACTIVE', 'DRAFT', 'ARCHIVED', 'UNLISTED')),
+  shopify_variant_exists boolean not null default true,
   shopify_price numeric(12,2) not null check (shopify_price >= 0),
   product_id uuid references public.products(id) on delete restrict,
   match_note text,
@@ -70,6 +71,9 @@ begin
     for update;
     if not found then
       raise exception 'A website variant is no longer available. Reload the page.';
+    end if;
+    if not current_row.shopify_variant_exists then
+      raise exception 'This website variant was removed. Reload the page before saving.';
     end if;
     if change.expected_updated_at is null or current_row.updated_at <> change.expected_updated_at then
       raise exception 'A product link was changed in another session. Reload the page before saving.';
