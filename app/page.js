@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const buttons = [
+  ["Jobs", "/jobs"],
   ["Record Sale", "/record-sale"],
   ["Products & Stock", "/products"],
   ["Stocktake / Adjustments", "/stocktake"],
