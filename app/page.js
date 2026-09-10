@@ -7,6 +7,7 @@ import { useAccess } from "./AuthGate";
 
 const buttons = [
   ["Jobs", "/jobs"],
+  ["Event POS", "/event-pos"],
   ["Record Sale", "/record-sale"],
   ["Products & Stock", "/products"],
   ["Stocktake / Adjustments", "/stocktake"],
