@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { useAccess } from "../AuthGate";
 
 const STATUSES = [
   ["new", "New"],
@@ -55,6 +56,7 @@ function money(value) {
 }
 
 export default function JobsPage() {
+  const { isAdmin } = useAccess();
   const [jobs, setJobs] = useState([]);
   const [products, setProducts] = useState([]);
   const [stockLevels, setStockLevels] = useState([]);
@@ -295,9 +297,11 @@ export default function JobsPage() {
             <Link href="/jobs/stock-order" style={secondaryLinkStyle}>
               Create Stock Order
             </Link>
-            <Link href="/jobs/new" style={primaryLinkStyle}>
-              + Add New Job
-            </Link>
+            {isAdmin && (
+              <Link href="/jobs/new" style={primaryLinkStyle}>
+                + Add New Job
+              </Link>
+            )}
           </div>
         </div>
 
@@ -371,7 +375,7 @@ export default function JobsPage() {
                   <Th>Payment</Th>
                   <Th>Value</Th>
                   <Th>Status</Th>
-                  <Th>Actions</Th>
+                  {isAdmin && <Th>Actions</Th>}
                 </tr>
               </thead>
               <tbody>
@@ -441,26 +445,34 @@ export default function JobsPage() {
                       <Td>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</Td>
                       <Td>{money(job.quoted_total)}</Td>
                       <Td>
-                        <select
-                          value={job.status}
-                          onChange={(event) =>
-                            changeStatus(job.id, event.target.value)
-                          }
-                          disabled={updatingId === job.id}
-                          style={{ ...fieldStyle, minWidth: "230px" }}
-                        >
-                          {STATUSES.map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
+                        {isAdmin ? (
+                          <select
+                            value={job.status}
+                            onChange={(event) =>
+                              changeStatus(job.id, event.target.value)
+                            }
+                            disabled={updatingId === job.id}
+                            style={{ ...fieldStyle, minWidth: "230px" }}
+                          >
+                            {STATUSES.map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span style={priorityStyle("normal")}>
+                            {STATUS_LABELS[job.status] || job.status}
+                          </span>
+                        )}
                       </Td>
-                      <Td>
-                        <Link href={`/jobs/edit/${job.id}`} style={editLinkStyle}>
-                          {job.sale_id ? "View" : "Edit"}
-                        </Link>
-                      </Td>
+                      {isAdmin && (
+                        <Td>
+                          <Link href={`/jobs/edit/${job.id}`} style={editLinkStyle}>
+                            {job.sale_id ? "View" : "Edit"}
+                          </Link>
+                        </Td>
+                      )}
                     </tr>
                   );
                 })}
