@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import { useAccess } from "../AuthGate";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +11,7 @@ const supabase = createClient(
 );
 
 export default function ProductsPage() {
+  const { isAdmin } = useAccess();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -193,19 +195,21 @@ export default function ProductsPage() {
             </p>
           </div>
 
-          <Link
-            href="/products/new"
-            style={{
-              background: "#111",
-              color: "#fff",
-              textDecoration: "none",
-              padding: "13px 18px",
-              borderRadius: "9px",
-              fontWeight: "700",
-            }}
-          >
-            + Add New Product
-          </Link>
+          {isAdmin && (
+            <Link
+              href="/products/new"
+              style={{
+                background: "#111",
+                color: "#fff",
+                textDecoration: "none",
+                padding: "13px 18px",
+                borderRadius: "9px",
+                fontWeight: "700",
+              }}
+            >
+              + Add New Product
+            </Link>
+          )}
         </div>
 
         <div
@@ -377,7 +381,7 @@ export default function ProductsPage() {
                   <Th>Low Stock</Th>
                   <Th>Stock Value</Th>
                   <Th>Status</Th>
-                  <Th>Actions</Th>
+                  {isAdmin && <Th>Actions</Th>}
                 </tr>
               </thead>
 
@@ -485,47 +489,49 @@ export default function ProductsPage() {
                           : "Inactive"}
                       </Td>
 
-                      <Td>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Link
-                            href={`/products/edit/${product.product_id}`}
+                      {isAdmin && (
+                        <Td>
+                          <div
                             style={{
-                              display: "inline-block",
-                              padding: "8px 11px",
-                              border: "1px solid #ccc",
-                              borderRadius: "7px",
-                              color: "#111",
-                              textDecoration: "none",
-                              fontWeight: "600",
-                              whiteSpace: "nowrap",
+                              display: "flex",
+                              gap: "8px",
+                              alignItems: "center",
                             }}
                           >
-                            Edit
-                          </Link>
+                            <Link
+                              href={`/products/edit/${product.product_id}`}
+                              style={{
+                                display: "inline-block",
+                                padding: "8px 11px",
+                                border: "1px solid #ccc",
+                                borderRadius: "7px",
+                                color: "#111",
+                                textDecoration: "none",
+                                fontWeight: "600",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Edit
+                            </Link>
 
-                          <Link
-                            href={`/products/new?copy=${product.product_id}`}
-                            style={{
-                              display: "inline-block",
-                              padding: "8px 11px",
-                              border: "1px solid #ccc",
-                              borderRadius: "7px",
-                              color: "#111",
-                              textDecoration: "none",
-                              fontWeight: "600",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            + Add Variant
-                          </Link>
-                        </div>
-                      </Td>
+                            <Link
+                              href={`/products/new?copy=${product.product_id}`}
+                              style={{
+                                display: "inline-block",
+                                padding: "8px 11px",
+                                border: "1px solid #ccc",
+                                borderRadius: "7px",
+                                color: "#111",
+                                textDecoration: "none",
+                                fontWeight: "600",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              + Add Variant
+                            </Link>
+                          </div>
+                        </Td>
+                      )}
                     </tr>
                   );
                 })}
