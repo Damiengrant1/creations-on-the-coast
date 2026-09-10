@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase";
+import { useAccess } from "../../AuthGate";
 
 const todayString = () => {
   const now = new Date();
@@ -21,6 +22,7 @@ const displayDate = (value) => {
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 
 export default function StockOrderPage() {
+  const { isAdmin } = useAccess();
   const [jobs, setJobs] = useState([]);
   const [products, setProducts] = useState([]);
   const [stockLevels, setStockLevels] = useState([]);
@@ -216,14 +218,16 @@ export default function StockOrderPage() {
             >
               Print / Save PDF
             </button>
-            <button
-              type="button"
-              onClick={markPlaced}
-              style={primaryButtonStyle}
-              disabled={saving || jobs.length === 0 || order.units === 0}
-            >
-              {saving ? "Updating..." : "Mark Order Placed"}
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={markPlaced}
+                style={primaryButtonStyle}
+                disabled={saving || jobs.length === 0 || order.units === 0}
+              >
+                {saving ? "Updating..." : "Mark Order Placed"}
+              </button>
+            )}
           </div>
         </div>
 
