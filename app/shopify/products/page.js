@@ -24,7 +24,7 @@ export default function ShopifyProductMatchingPage() {
   const [edits, setEdits] = useState({});
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +52,7 @@ export default function ShopifyProductMatchingPage() {
       if (accessError) throw accessError;
       if (access?.role !== "admin" || !access.active) throw new Error("An approved admin account is required.");
       const [links, stock] = await Promise.all([
-        readAll(() => supabase.from("shopify_variant_mappings").select("shopify_variant_id, shopify_product_title, shopify_variant_title, shopify_status, shopify_price, product_id, match_note, updated_at, catalog_checked_at")
+        readAll(() => supabase.from("shopify_variant_mappings").select("shopify_variant_id, shopify_product_title, shopify_variant_title, shopify_status, shopify_variant_exists, shopify_price, product_id, match_note, updated_at, catalog_checked_at")
           .eq("shop_domain", SHOP_DOMAIN).order("shopify_product_title").order("shopify_variant_id")),
         readAll(() => supabase.from("products").select("id, product_name, sku, colour, size, stock_cost, production_cost, active, track_stock")
           .order("product_name").order("id")),
@@ -70,7 +70,7 @@ export default function ShopifyProductMatchingPage() {
   const byId = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
   const selectable = useMemo(() => products.filter(p => p.active && p.track_stock).sort((a, b) => productLabel(a).localeCompare(productLabel(b), "en-GB", { numeric: true })), [products]);
   const usable = id => { const p = byId.get(id); return Boolean(p?.active && p?.track_stock); };
-  const scopeRows = rows.filter(row => includeArchived || row.shopify_status !== "ARCHIVED");
+  const scopeRows = rows.filter(row => row.shopify_variant_exists !== false && (includeInactive || row.shopify_status === "ACTIVE"));
   const linked = scopeRows.filter(row => usable(row.product_id)).length;
   const visible = scopeRows.filter(row => {
     if (filter === "pending" && usable(row.product_id)) return false;
@@ -152,7 +152,7 @@ export default function ShopifyProductMatchingPage() {
                 <option value="all">All variants</option><option value="pending">Need matching</option><option value="linked">Linked to stock</option>
               </select>
             </label>
-            <label style={{ paddingBottom: "12px" }}><input type="checkbox" checked={includeArchived} onChange={e => setIncludeArchived(e.target.checked)} /> Include archived website products</label>
+            <label style={{ paddingBottom: "12px" }}><input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} /> Include unlisted, draft and archived products</label>
           </div>
 
           {loading ? <p role="status">Loading product links…</p> : (
@@ -194,7 +194,7 @@ export default function ShopifyProductMatchingPage() {
             <button type="button" disabled={saving || loading || !dirtyCount} onClick={save} style={{ ...buttonStyle, opacity: saving || loading || !dirtyCount ? 0.5 : 1 }}>{saving ? "Saving…" : "Save product links"}</button>
           </div>
         </div>
-        <p style={{ color: "#777", fontSize: "13px", lineHeight: 1.6 }}>The website catalogue was loaded for this setup. Reload links refreshes saved links and stock records; it does not fetch newly added Shopify products.</p>
+        <p style={{ color: "#777", fontSize: "13px", lineHeight: 1.6 }}>Only current variants from active Shopify products are shown by default. Unlisted, draft and archived products can be included above. Removed variants are kept in history. Reload links refreshes saved links and stock records; it does not fetch newly added Shopify products.</p>
       </div>
     </main>
   );
