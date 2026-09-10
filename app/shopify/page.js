@@ -118,6 +118,12 @@ export default function ShopifyPage() {
             <Link href="/shopify/products" style={{ ...buttonStyle, textDecoration: "none" }}>Product matching</Link>
           </div>
         </section>
+
+        <section style={{ ...cardStyle, marginTop: "22px" }} aria-labelledby="payouts-heading">
+          <h2 id="payouts-heading" style={{ fontSize: "22px", margin: "0 0 10px" }}>Shopify Payments payouts</h2>
+          <p style={{ color: "#555", lineHeight: 1.7 }}>Track cleared Shopify payouts to your bank and record Shopify payment fees automatically.</p>
+          <Link href="/shopify/payouts" style={{ ...buttonStyle, textDecoration: "none" }}>Payouts and fees</Link>
+        </section>
       </div>
     </main>
   );
