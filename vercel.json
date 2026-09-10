@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/shopify/payouts?cron=1",
+      "path": "/api/shopify/payouts",
       "schedule": "0 8 * * *"
     }
   ]
