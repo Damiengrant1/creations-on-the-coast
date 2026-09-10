@@ -188,7 +188,7 @@ export default function ShopifyProductMatchingPage() {
         </section>
 
         <div style={{ ...cardStyle, position: "sticky", bottom: "10px", marginTop: "16px", display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", border: "1px solid #ddd" }}>
-          <div><strong>{dirtyCount} unsaved change{dirtyCount === 1 ? "" : "s"}</strong><div style={{ color: "#666", marginTop: "5px", fontSize: "13px" }}>Automatic imports are still off. Saving links does not change stock or sales.</div></div>
+          <div><strong>{dirtyCount} unsaved change{dirtyCount === 1 ? "" : "s"}</strong><div style={{ color: "#666", marginTop: "5px", fontSize: "13px" }}>Saving links does not change stock or sales. New imports use the saved links.</div></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             <button type="button" disabled={saving || loading} onClick={() => { if (!dirtyCount || window.confirm("Discard your unsaved changes and reload?")) loadData(); }} style={{ ...buttonStyle, color: "#111", background: "#eee" }}>{dirtyCount ? "Discard and reload" : "Reload links"}</button>
             <button type="button" disabled={saving || loading || !dirtyCount} onClick={save} style={{ ...buttonStyle, opacity: saving || loading || !dirtyCount ? 0.5 : 1 }}>{saving ? "Saving…" : "Save product links"}</button>

@@ -111,17 +111,12 @@ export default function ShopifyPage() {
         </section>
 
         <section style={{ ...cardStyle, marginTop: "22px" }} aria-labelledby="imports-heading">
-          <h2 id="imports-heading" style={{ fontSize: "22px", margin: "0 0 10px" }}>Automatic imports: not enabled yet</h2>
-          <p style={{ margin: "0 0 12px", color: "#555", lineHeight: 1.7 }}>
-            This connection check does not import orders or change sales, jobs, stock, or account balances.
-          </p>
-          <p style={{ margin: 0, color: "#555", lineHeight: 1.7 }}>
-            Match website products to your stock items, then we will choose the first date to import,
-            so sales already recorded in this dashboard are not entered twice.
-          </p>
-          <Link href="/shopify/products" style={{ ...buttonStyle, display: "inline-block", marginTop: "20px", textDecoration: "none" }}>
-            Product matching
-          </Link>
+          <h2 id="imports-heading" style={{ fontSize: "22px", margin: "0 0 10px" }}>Website sales and jobs</h2>
+          <p style={{ color: "#555", lineHeight: 1.7 }}>Manage automatic paid-order imports, product matching and orders needing review.</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+            <Link href="/shopify/imports" style={{ ...buttonStyle, textDecoration: "none" }}>Automatic imports</Link>
+            <Link href="/shopify/products" style={{ ...buttonStyle, textDecoration: "none" }}>Product matching</Link>
+          </div>
         </section>
       </div>
     </main>

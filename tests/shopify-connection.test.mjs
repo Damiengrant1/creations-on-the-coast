@@ -81,7 +81,7 @@ test("checks the pinned store, returns safe fields, and reuses the server token"
   const data = JSON.parse(body);
   assert.equal(data.connected, true);
   assert.equal(data.permissionsReady, true);
-  assert.equal(data.importsEnabled, false);
+  assert.equal(data.connectionCheckOnly, true);
   assert.equal(data.shop.name, "Creations on the Coast");
   assert.equal(h.calls[0].url, "https://ku1cvy-ue.myshopify.com/admin/oauth/access_token");
   assert.equal(h.calls[0].options.body.get("grant_type"), "client_credentials");

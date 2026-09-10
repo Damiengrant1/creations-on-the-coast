@@ -154,6 +154,9 @@ export default function JobsPage() {
   );
 
   function getStockStatus(job) {
+    if (job.sale_id) {
+      return { label: "Deducted", type: "check", title: "Stock was already deducted by this job's sale. It is not deducted again when the job is completed." };
+    }
     const items = job.job_items || [];
 
     if (items.length === 0) {

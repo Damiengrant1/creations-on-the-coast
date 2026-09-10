@@ -200,7 +200,7 @@ export async function POST(request) {
       shop: { name: shop.name.trim(), domain: shop.myshopifyDomain, currency: shop.currencyCode, timezone: shop.ianaTimezone },
       permissions,
       checkedAt: new Date().toISOString(),
-      importsEnabled: false,
+      connectionCheckOnly: true,
     });
   } catch (error) {
     // Never return upstream response bodies, credentials, tokens, or stack traces.
