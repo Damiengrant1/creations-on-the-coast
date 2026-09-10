@@ -56,6 +56,8 @@ function money(value) {
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [stockLevels, setStockLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,20 +72,31 @@ export default function JobsPage() {
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase
-      .from("jobs")
-      .select(
-        "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, created_at, updated_at, job_items(id, item_description, quantity, unit_price, personalisation, product_id)"
-      )
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false });
+    const [jobsResult, productsResult, stockResult] = await Promise.all([
+      supabase
+        .from("jobs")
+        .select(
+          "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, sale_id, created_at, updated_at, job_items(id, item_description, quantity, unit_price, personalisation, product_id)"
+        )
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false }),
+      supabase.from("products").select("id, track_stock"),
+      supabase.from("current_stock").select("product_id, current_stock"),
+    ]);
 
-    if (error) {
-      console.error("Jobs error:", error);
-      setMessage(`Could not load jobs: ${error.message}`);
+    const firstError =
+      jobsResult.error || productsResult.error || stockResult.error;
+
+    if (firstError) {
+      console.error("Jobs error:", firstError);
+      setMessage(`Could not load jobs: ${firstError.message}`);
       setJobs([]);
+      setProducts([]);
+      setStockLevels([]);
     } else {
-      setJobs(data || []);
+      setJobs(jobsResult.data || []);
+      setProducts(productsResult.data || []);
+      setStockLevels(stockResult.data || []);
     }
 
     setLoading(false);
@@ -123,6 +136,79 @@ export default function JobsPage() {
   const inSevenDays = localDateString(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   );
+
+  const productMap = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products]
+  );
+
+  const stockMap = useMemo(
+    () =>
+      new Map(
+        stockLevels.map((stock) => [
+          stock.product_id,
+          Number(stock.current_stock || 0),
+        ])
+      ),
+    [stockLevels]
+  );
+
+  function getStockStatus(job) {
+    const items = job.job_items || [];
+
+    if (items.length === 0) {
+      return { label: "Check", type: "check", title: "No job items" };
+    }
+
+    const requiredByProduct = new Map();
+    let hasUnlinkedItem = false;
+
+    items.forEach((item) => {
+      if (!item.product_id) {
+        hasUnlinkedItem = true;
+        return;
+      }
+
+      const product = productMap.get(item.product_id);
+
+      if (!product) {
+        hasUnlinkedItem = true;
+        return;
+      }
+
+      if (product.track_stock) {
+        requiredByProduct.set(
+          item.product_id,
+          (requiredByProduct.get(item.product_id) || 0) +
+            Number(item.quantity || 0)
+        );
+      }
+    });
+
+    for (const [productId, requiredQuantity] of requiredByProduct) {
+      if ((stockMap.get(productId) || 0) < requiredQuantity) {
+        return {
+          label: "No",
+          type: "no",
+          title: "At least one item does not have enough stock",
+        };
+      }
+    }
+
+    if (hasUnlinkedItem) {
+      return {
+        label: "Check",
+        type: "check",
+        title: "At least one item is not linked to a product",
+      };
+    }
+
+    return {
+      label: "Yes",
+      type: "yes",
+      title: "All stock-tracked items are available",
+    };
+  }
 
   const summary = useMemo(() => {
     const activeJobs = jobs.filter(
@@ -202,13 +288,7 @@ export default function JobsPage() {
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              flexWrap: "wrap",
-            }}
-          >
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <Link href="/jobs/stock-order" style={secondaryLinkStyle}>
               Create Stock Order
             </Link>
@@ -284,9 +364,11 @@ export default function JobsPage() {
                   <Th>Due</Th>
                   <Th>Source</Th>
                   <Th>Priority</Th>
+                  <Th>Stock Ready?</Th>
                   <Th>Payment</Th>
                   <Th>Value</Th>
                   <Th>Status</Th>
+                  <Th>Actions</Th>
                 </tr>
               </thead>
               <tbody>
@@ -294,6 +376,7 @@ export default function JobsPage() {
                   const isActive = !CLOSED_STATUSES.has(job.status);
                   const isOverdue =
                     isActive && job.due_date && job.due_date < today;
+                  const stockStatus = getStockStatus(job);
 
                   return (
                     <tr
@@ -344,6 +427,14 @@ export default function JobsPage() {
                           {job.priority.charAt(0).toUpperCase() + job.priority.slice(1)}
                         </span>
                       </Td>
+                      <Td>
+                        <span
+                          title={stockStatus.title}
+                          style={stockStatusStyle(stockStatus.type)}
+                        >
+                          {stockStatus.label}
+                        </span>
+                      </Td>
                       <Td>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</Td>
                       <Td>{money(job.quoted_total)}</Td>
                       <Td>
@@ -361,6 +452,11 @@ export default function JobsPage() {
                             </option>
                           ))}
                         </select>
+                      </Td>
+                      <Td>
+                        <Link href={`/jobs/edit/${job.id}`} style={editLinkStyle}>
+                          {job.sale_id ? "View" : "Edit"}
+                        </Link>
                       </Td>
                     </tr>
                   );
@@ -413,6 +509,23 @@ function priorityStyle(priority) {
     display: "inline-block",
     padding: "5px 8px",
     borderRadius: "6px",
+    fontWeight: "700",
+    whiteSpace: "nowrap",
+  };
+}
+
+function stockStatusStyle(type) {
+  const colours = {
+    yes: { background: "#dff5e6", color: "#176b35" },
+    no: { background: "#ffe0e0", color: "#9b1c1c" },
+    check: { background: "#fff2cc", color: "#744c00" },
+  };
+
+  return {
+    ...(colours[type] || colours.check),
+    display: "inline-block",
+    padding: "5px 9px",
+    borderRadius: "999px",
     fontWeight: "700",
     whiteSpace: "nowrap",
   };
@@ -514,7 +627,18 @@ const tablePanelStyle = {
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: "1450px",
+  minWidth: "1650px",
+};
+
+const editLinkStyle = {
+  display: "inline-block",
+  color: "#111",
+  textDecoration: "none",
+  padding: "10px 14px",
+  borderRadius: "8px",
+  border: "1px solid #aaa",
+  fontWeight: "700",
+  whiteSpace: "nowrap",
 };
 
 const subTextStyle = {
