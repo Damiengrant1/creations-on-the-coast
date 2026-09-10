@@ -202,9 +202,20 @@ export default function JobsPage() {
             </p>
           </div>
 
-          <Link href="/jobs/new" style={primaryLinkStyle}>
-            + Add New Job
-          </Link>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
+            <Link href="/jobs/stock-order" style={secondaryLinkStyle}>
+              Create Stock Order
+            </Link>
+            <Link href="/jobs/new" style={primaryLinkStyle}>
+              + Add New Job
+            </Link>
+          </div>
         </div>
 
         <div style={summaryGridStyle}>
@@ -427,6 +438,16 @@ const headingRowStyle = {
   alignItems: "center",
   flexWrap: "wrap",
   marginBottom: "24px",
+};
+
+const secondaryLinkStyle = {
+  background: "#fff",
+  color: "#111",
+  textDecoration: "none",
+  padding: "12px 17px",
+  borderRadius: "9px",
+  border: "1px solid #aaa",
+  fontWeight: "700",
 };
 
 const primaryLinkStyle = {
