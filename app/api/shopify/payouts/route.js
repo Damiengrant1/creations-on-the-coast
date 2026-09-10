@@ -200,8 +200,7 @@ function hasCronAccess(request) {
 
 export async function GET(request) {
   try {
-    if (new URL(request.url).searchParams.get("cron") === "1") {
-      if (!hasCronAccess(request)) return new Response("Unauthorized", { status: 401 });
+    if (hasCronAccess(request)) {
       const result = await syncPayouts(serviceDatabase());
       return Response.json(result.summary, { headers: { "Cache-Control": "no-store" } });
     }
