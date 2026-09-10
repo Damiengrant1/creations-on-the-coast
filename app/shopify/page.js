@@ -116,9 +116,12 @@ export default function ShopifyPage() {
             This connection check does not import orders or change sales, jobs, stock, or account balances.
           </p>
           <p style={{ margin: 0, color: "#555", lineHeight: 1.7 }}>
-            Next we will match website products to your stock items and choose the first date to import,
+            Match website products to your stock items, then we will choose the first date to import,
             so sales already recorded in this dashboard are not entered twice.
           </p>
+          <Link href="/shopify/products" style={{ ...buttonStyle, display: "inline-block", marginTop: "20px", textDecoration: "none" }}>
+            Product matching
+          </Link>
         </section>
       </div>
     </main>
