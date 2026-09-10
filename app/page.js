@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useAccess } from "./AuthGate";
 
 const buttons = [
   ["Jobs", "/jobs"],
@@ -34,6 +35,7 @@ async function fetchDashboardFigures() {
 }
 
 export default function HomePage() {
+  const { isAdmin } = useAccess();
   const [figures, setFigures] = useState({
     sales: 0,
     grossProfit: 0,
@@ -131,7 +133,7 @@ export default function HomePage() {
             Business Management
           </h2>
           <div style={buttonGridStyle}>
-            {buttons.map(([label, href]) => (
+            {buttons.filter(([label]) => isAdmin || label === "Jobs" || label === "Products & Stock").map(([label, href]) => (
               <Link key={label} href={href} style={linkStyle}>
                 {label}
               </Link>
