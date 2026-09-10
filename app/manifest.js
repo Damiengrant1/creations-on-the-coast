@@ -1,0 +1,23 @@
+export default function manifest() {
+  return {
+    name: "Creations on the Coast",
+    short_name: "Coast POS",
+    description: "Creations on the Coast business management system",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#f7f7f8",
+    theme_color: "#111111",
+    icons: [
+      {
+        src: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        src: "/icons/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+  };
+}
