@@ -155,6 +155,35 @@ export default function JobsPage() {
     [stockLevels]
   );
 
+  const reservedByJob = useMemo(() => {
+    const reservations = new Map();
+    jobs
+      .filter((job) => !job.sale_id && !CLOSED_STATUSES.has(job.status))
+      .forEach((job) => {
+        const reserved = new Map();
+        (job.job_items || []).forEach((item) => {
+          const product = item.product_id ? productMap.get(item.product_id) : null;
+          if (!product?.track_stock) return;
+          reserved.set(
+            item.product_id,
+            (reserved.get(item.product_id) || 0) + Number(item.quantity || 0)
+          );
+        });
+        reservations.set(job.id, reserved);
+      });
+    return reservations;
+  }, [jobs, productMap]);
+
+  const totalReservedByProduct = useMemo(() => {
+    const totals = new Map();
+    reservedByJob.forEach((reservation) => {
+      reservation.forEach((quantity, productId) => {
+        totals.set(productId, (totals.get(productId) || 0) + quantity);
+      });
+    });
+    return totals;
+  }, [reservedByJob]);
+
   function getStockStatus(job) {
     if (job.sale_id) {
       return { label: "Deducted", type: "check", title: "Stock was already deducted by this job's sale. It is not deducted again when the job is completed." };
@@ -191,11 +220,18 @@ export default function JobsPage() {
     });
 
     for (const [productId, requiredQuantity] of requiredByProduct) {
-      if ((stockMap.get(productId) || 0) < requiredQuantity) {
+      const otherReservations =
+        (totalReservedByProduct.get(productId) || 0) -
+        (reservedByJob.get(job.id)?.get(productId) || 0);
+      const availableForThisJob = Math.max(
+        0,
+        (stockMap.get(productId) || 0) - otherReservations
+      );
+      if (availableForThisJob < requiredQuantity) {
         return {
           label: "No",
           type: "no",
-          title: "At least one item does not have enough stock",
+          title: "At least one item is reserved for another active job or needs ordering",
         };
       }
     }
@@ -211,7 +247,7 @@ export default function JobsPage() {
     return {
       label: "Yes",
       type: "yes",
-      title: "All stock-tracked items are available",
+      title: "All stock-tracked items are available after reservations for other active jobs",
     };
   }
 
