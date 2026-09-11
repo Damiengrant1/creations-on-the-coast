@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useAccess } from "../../AuthGate";
 
+const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
+
 const todayString = () => {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -24,6 +26,7 @@ const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 export default function StockOrderPage() {
   const { isAdmin } = useAccess();
   const [jobs, setJobs] = useState([]);
+  const [activeJobs, setActiveJobs] = useState([]);
   const [products, setProducts] = useState([]);
   const [stockLevels, setStockLevels] = useState([]);
   const [supplier, setSupplier] = useState("");
@@ -42,7 +45,7 @@ export default function StockOrderPage() {
     setLoading(true);
     setMessage("");
 
-    const [jobsResult, productsResult, stockResult] = await Promise.all([
+    const [jobsResult, activeJobsResult, productsResult, stockResult] = await Promise.all([
       supabase
         .from("jobs")
         .select(
@@ -50,6 +53,9 @@ export default function StockOrderPage() {
         )
         .eq("status", "awaiting_stock_order")
         .order("due_date", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("jobs")
+        .select("id, status, sale_id, job_items(product_id, quantity)"),
       supabase
         .from("products")
         .select(
@@ -60,13 +66,14 @@ export default function StockOrderPage() {
     ]);
 
     const error =
-      jobsResult.error || productsResult.error || stockResult.error;
+      jobsResult.error || activeJobsResult.error || productsResult.error || stockResult.error;
 
     if (error) {
       console.error("Stock order error:", error);
       setMessage(`Could not load stock order: ${error.message}`);
     } else {
       setJobs(jobsResult.data || []);
+      setActiveJobs(activeJobsResult.data || []);
       setProducts(productsResult.data || []);
       setStockLevels(stockResult.data || []);
     }
@@ -84,6 +91,25 @@ export default function StockOrderPage() {
         Math.max(0, Number(stock.current_stock || 0)),
       ])
     );
+    const targetJobIds = new Set(jobs.map((job) => job.id));
+    const reservedForOtherJobs = new Map();
+    activeJobs
+      .filter(
+        (job) =>
+          !targetJobIds.has(job.id) &&
+          !job.sale_id &&
+          !CLOSED_STATUSES.has(job.status)
+      )
+      .forEach((job) => {
+        (job.job_items || []).forEach((item) => {
+          if (!item.product_id) return;
+          reservedForOtherJobs.set(
+            item.product_id,
+            (reservedForOtherJobs.get(item.product_id) || 0) +
+              Number(item.quantity || 0)
+          );
+        });
+      });
     const grouped = new Map();
 
     jobs.forEach((job) => {
@@ -109,7 +135,11 @@ export default function StockOrderPage() {
             required: 0,
             available:
               product?.track_stock
-                ? stockMap.get(product.id) || 0
+                ? Math.max(
+                    0,
+                    (stockMap.get(product.id) || 0) -
+                      (reservedForOtherJobs.get(product.id) || 0)
+                  )
                 : 0,
             costEach: Number(product?.stock_cost || 0),
             manual: !product,
@@ -143,7 +173,7 @@ export default function StockOrderPage() {
       ),
       manualItems: rows.filter((row) => row.manual).length,
     };
-  }, [jobs, products, stockLevels]);
+  }, [jobs, activeJobs, products, stockLevels]);
 
   async function markPlaced() {
     if (jobs.length === 0 || order.units === 0) return;
