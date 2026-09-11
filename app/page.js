@@ -164,7 +164,7 @@ export default function HomePage() {
             Business Management
           </h2>
           <div style={buttonGridStyle}>
-            {buttons.filter(([label]) => isAdmin || label === "Jobs" || label === "Products & Stock").map(([label, href]) => (
+            {buttons.filter(([label]) => isAdmin || label === "Jobs" || label === "Products & Stock" || label === "Event POS").map(([label, href]) => (
               <Link key={label} href={href} style={linkStyle}>
                 {label}
               </Link>
