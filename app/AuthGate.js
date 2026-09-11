@@ -10,7 +10,7 @@ export function useAccess() {
   return useContext(AccessContext);
 }
 
-const accountabilityRoutes = new Set(["/", "/jobs", "/jobs/stock-order", "/products"]);
+const accountabilityRoutes = new Set(["/", "/jobs", "/jobs/stock-order", "/products", "/event-pos"]);
 
 export default function AuthGate({ children }) {
   const pathname = usePathname();
