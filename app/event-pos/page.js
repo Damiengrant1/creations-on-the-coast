@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAccess } from "../AuthGate";
 
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 
 export default function EventPosPage() {
-  const { isAdmin } = useAccess();
   const [products, setProducts] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [events, setEvents] = useState([]);
@@ -119,10 +117,6 @@ export default function EventPosPage() {
 
   async function completeSale() {
     setMessage("");
-    if (!isAdmin) {
-      setMessage("Only administrators can complete POS sales.");
-      return;
-    }
     if (!basket.length) {
       setMessage("Add at least one item to the basket.");
       return;
@@ -240,8 +234,7 @@ export default function EventPosPage() {
             <div style={{ textAlign: "right", fontWeight: "700", marginTop: "7px" }}>{money(item.quantity * item.price)}</div>
           </div>)}
           <div style={totalStyle}><span>Total</span><strong>{money(total)}</strong></div>
-          <button type="button" disabled={saving || !basket.length || !isAdmin} onClick={completeSale} style={completeStyle}>{saving ? "Completing sale…" : `Complete Sale — ${money(total)}`}</button>
-          {!isAdmin && <p style={{ color: "#9b1c1c", fontSize: "14px" }}>You can view the POS, but an administrator must complete sales.</p>}
+          <button type="button" disabled={saving || !basket.length} onClick={completeSale} style={completeStyle}>{saving ? "Completing sale…" : `Complete Sale — ${money(total)}`}</button>
         </aside>
       </div>
     </main>
