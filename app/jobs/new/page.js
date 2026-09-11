@@ -18,6 +18,8 @@ const STATUSES = [
   ["cancelled", "Cancelled"],
 ];
 
+const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
+
 function todayString() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -69,7 +71,7 @@ export default function AddJobPage() {
   }, []);
 
   async function loadProducts() {
-    const [productsResult, stockResult] = await Promise.all([
+    const [productsResult, stockResult, jobsResult] = await Promise.all([
       supabase
         .from("products")
         .select(
@@ -80,9 +82,12 @@ export default function AddJobPage() {
       supabase
         .from("current_stock")
         .select("product_id, current_stock"),
+      supabase
+        .from("jobs")
+        .select("id, status, sale_id, job_items(product_id, quantity)"),
     ]);
 
-    const error = productsResult.error || stockResult.error;
+    const error = productsResult.error || stockResult.error || jobsResult.error;
 
     if (error) {
       console.error("Products or stock error:", error);
@@ -95,10 +100,25 @@ export default function AddJobPage() {
         ])
       );
 
+      const reservedByProduct = new Map();
+      (jobsResult.data || [])
+        .filter((job) => !job.sale_id && !CLOSED_STATUSES.has(job.status))
+        .forEach((job) => {
+          (job.job_items || []).forEach((item) => {
+            if (!item.product_id) return;
+            reservedByProduct.set(
+              item.product_id,
+              (reservedByProduct.get(item.product_id) || 0) +
+                Number(item.quantity || 0)
+            );
+          });
+        });
+
       setProducts(
         (productsResult.data || []).map((product) => ({
           ...product,
           currentStock: stockByProduct.get(product.id) || 0,
+          reservedStock: reservedByProduct.get(product.id) || 0,
         }))
       );
     }
@@ -162,18 +182,20 @@ export default function AddJobPage() {
     const requiredQuantity = items
       .filter((entry) => entry.productId === item.productId)
       .reduce((total, entry) => total + Number(entry.quantity || 0), 0);
-    const availableQuantity = Number(product.currentStock || 0);
+    const physicalQuantity = Number(product.currentStock || 0);
+    const reservedQuantity = Number(product.reservedStock || 0);
+    const availableQuantity = Math.max(0, physicalQuantity - reservedQuantity);
 
     if (availableQuantity >= requiredQuantity) {
       return {
         type: "yes",
-        text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. Enough stock available.`,
+        text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}.`,
       };
     }
 
     return {
       type: "no",
-      text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
+      text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
     };
   }
 
