@@ -18,6 +18,8 @@ const STATUSES = [
   ["cancelled", "Cancelled"],
 ];
 
+const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
+
 const blankItem = () => ({
   productId: "",
   description: "",
@@ -73,7 +75,7 @@ export default function EditJobPage() {
     setLoading(true);
     setMessage("");
 
-    const [jobResult, productsResult, accountsResult, stockResult] = await Promise.all([
+    const [jobResult, productsResult, accountsResult, stockResult, jobsResult] = await Promise.all([
       supabase
         .from("jobs")
         .select(
@@ -96,13 +98,17 @@ export default function EditJobPage() {
       supabase
         .from("current_stock")
         .select("product_id, current_stock"),
+      supabase
+        .from("jobs")
+        .select("id, status, sale_id, job_items(product_id, quantity)"),
     ]);
 
     const error =
       jobResult.error ||
       productsResult.error ||
       accountsResult.error ||
-      stockResult.error;
+      stockResult.error ||
+      jobsResult.error;
 
     if (error) {
       console.error("Edit job load error:", error);
@@ -148,10 +154,29 @@ export default function EditJobPage() {
         Number(stock.current_stock || 0),
       ])
     );
+    const reservedByProduct = new Map();
+    (jobsResult.data || [])
+      .filter(
+        (otherJob) =>
+          otherJob.id !== jobId &&
+          !otherJob.sale_id &&
+          !CLOSED_STATUSES.has(otherJob.status)
+      )
+      .forEach((otherJob) => {
+        (otherJob.job_items || []).forEach((item) => {
+          if (!item.product_id) return;
+          reservedByProduct.set(
+            item.product_id,
+            (reservedByProduct.get(item.product_id) || 0) +
+              Number(item.quantity || 0)
+          );
+        });
+      });
     setProducts(
       (productsResult.data || []).map((product) => ({
         ...product,
         currentStock: stockByProduct.get(product.id) || 0,
+        reservedStock: reservedByProduct.get(product.id) || 0,
       }))
     );
     setAccounts(accountsResult.data || []);
@@ -225,18 +250,20 @@ export default function EditJobPage() {
     const requiredQuantity = items
       .filter((entry) => entry.productId === item.productId)
       .reduce((total, entry) => total + Number(entry.quantity || 0), 0);
-    const availableQuantity = Number(product.currentStock || 0);
+    const physicalQuantity = Number(product.currentStock || 0);
+    const reservedQuantity = Number(product.reservedStock || 0);
+    const availableQuantity = Math.max(0, physicalQuantity - reservedQuantity);
 
     if (availableQuantity >= requiredQuantity) {
       return {
         type: "yes",
-        text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. Enough stock available.`,
+        text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}.`,
       };
     }
 
     return {
       type: "no",
-      text: `In stock: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
+      text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
     };
   }
 
