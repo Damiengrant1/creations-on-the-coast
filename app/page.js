@@ -12,6 +12,7 @@ const buttons = [
   ["Products & Stock", "/products"],
   ["Stocktake / Adjustments", "/stocktake"],
   ["Stock Purchases", "/stock-purchases"],
+  ["Supplier Credits", "/supplier-credits"],
   ["Events", "/events"],
   ["Expenses", "/expenses"],
   ["Cash Flow", "/cash-flow"],
