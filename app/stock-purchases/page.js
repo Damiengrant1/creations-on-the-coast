@@ -35,6 +35,7 @@ export default function StockPurchasesPage() {
   const [accountId, setAccountId] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+  const [deliveryFee, setDeliveryFee] = useState("");
 
   const [items, setItems] = useState([blankItem()]);
 
@@ -141,7 +142,7 @@ export default function StockPurchasesPage() {
     );
   }
 
-  const purchaseTotal = useMemo(
+  const stockSubtotal = useMemo(
     () =>
       items.reduce(
         (sum, item) =>
@@ -152,6 +153,8 @@ export default function StockPurchasesPage() {
       ),
     [items]
   );
+  const deliveryTotal = Number(deliveryFee || 0);
+  const purchaseTotal = stockSubtotal + deliveryTotal;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -193,6 +196,12 @@ export default function StockPurchasesPage() {
       return;
     }
 
+    if (deliveryFee !== "" && (Number.isNaN(deliveryTotal) || deliveryTotal < 0)) {
+      setMessage("Delivery fee must be zero or a positive amount.");
+      setMessageType("error");
+      return;
+    }
+
     const selectedProductIds = items.map((item) => item.productId);
     const duplicateProduct = selectedProductIds.some(
       (productId, index) =>
@@ -217,6 +226,7 @@ export default function StockPurchasesPage() {
         account_id: accountId,
         reference: reference.trim() || null,
         notes: notes.trim() || null,
+        delivery_fee: deliveryTotal,
       })
       .select("id")
       .single();
@@ -280,6 +290,7 @@ export default function StockPurchasesPage() {
     setAccountId("");
     setReference("");
     setNotes("");
+    setDeliveryFee("");
     setItems([blankItem()]);
     setSaving(false);
   }
@@ -339,6 +350,10 @@ export default function StockPurchasesPage() {
           Record blank stock purchased from a supplier. Stock quantities and
           the selected account will update automatically.
         </p>
+
+        <Link href="/supplier-credits" style={{ display: "inline-block", marginBottom: "24px", color: "#333", fontWeight: "600" }}>
+          Record a supplier refund or credit note →
+        </Link>
 
         {message && (
           <div
@@ -447,6 +462,19 @@ export default function StockPurchasesPage() {
                       setReference(event.target.value)
                     }
                     placeholder="Optional"
+                    style={fieldStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Delivery Fee (£)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={deliveryFee}
+                    onChange={(event) => setDeliveryFee(event.target.value)}
+                    placeholder="0.00"
                     style={fieldStyle}
                   />
                 </div>
@@ -640,7 +668,25 @@ export default function StockPurchasesPage() {
               >
                 <div>
                   <div style={{ color: "#666", marginBottom: "5px" }}>
-                    Purchase Total
+                    Stock Subtotal
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: "700" }}>
+                    £{stockSubtotal.toFixed(2)}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ color: "#666", marginBottom: "5px" }}>
+                    Delivery Fee
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: "700" }}>
+                    £{deliveryTotal.toFixed(2)}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ color: "#666", marginBottom: "5px" }}>
+                    Total Paid
                   </div>
                   <div
                     style={{
@@ -660,7 +706,9 @@ export default function StockPurchasesPage() {
                   }}
                 >
                   Unit cost defaults to the product’s Stock Cost. Change it if
-                  the supplier price on this purchase is different.
+                  the supplier price on this purchase is different — the product’s
+                  Stock Cost and Total Direct Cost will update automatically. Delivery
+                  is included in the amount paid, but remains separate from unit cost.
                 </div>
               </div>
 
