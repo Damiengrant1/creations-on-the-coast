@@ -92,7 +92,15 @@ async function importOnePayout(db, payout, accounts) {
     .maybeSingle();
 
   if (existing.error) throw new ImportError("Could not check existing Shopify payouts.");
-  if (existing.data) return { duplicate: true, review: existing.data.status === "needs_review" };
+  if (existing.data?.status === "imported") return { duplicate: true };
+  if (existing.data?.status === "needs_review") {
+    const { error } = await db
+      .from("shopify_payout_imports")
+      .delete()
+      .eq("payout_id", payoutId);
+
+    if (error) throw new ImportError("Could not retry the Shopify payout review.");
+  }
 
   const transactions = await shopifyRest(
     `/shopify_payments/balance/transactions.json?payout_id=${encodeURIComponent(payoutId)}&limit=250`
@@ -104,10 +112,16 @@ async function importOnePayout(db, payout, accounts) {
     return { review: true };
   }
 
-  const types = [...new Set(rows.map((row) => String(row.type || "unknown").toLowerCase()))];
-  const gross = rows.reduce((sum, row) => sum + amount(row.amount), 0);
-  const fees = rows.reduce((sum, row) => sum + Math.abs(amount(row.fee)), 0);
-  const net = rows.reduce((sum, row) => sum + amount(row.net), 0);
+  // Shopify includes the outgoing payout row in this response. It is the
+  // transfer itself, not another sale or adjustment, so exclude it when
+  // reconciling the charges that make up the payout.
+  const balanceRows = rows.filter(
+    (row) => String(row.type || "").toLowerCase() !== "payout"
+  );
+  const types = [...new Set(balanceRows.map((row) => String(row.type || "unknown").toLowerCase()))];
+  const gross = balanceRows.reduce((sum, row) => sum + amount(row.amount), 0);
+  const fees = balanceRows.reduce((sum, row) => sum + Math.abs(amount(row.fee)), 0);
+  const net = balanceRows.reduce((sum, row) => sum + amount(row.net), 0);
   const payoutAmount = amount(payout.amount);
   const currency = String(payout.currency || "GBP").toUpperCase();
   const simpleChargesOnly = types.every((type) => type === "charge");
