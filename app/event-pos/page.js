@@ -34,7 +34,7 @@ export default function EventPosPage() {
     const [productResult, accountResult, eventResult] = await Promise.all([
       supabase
         .from("products")
-        .select("id, product_name, category, selling_price, cost_price, colour, size, track_stock")
+        .select("id, product_name, sku, category, selling_price, cost_price, colour, size, track_stock")
         .eq("active", true)
         .order("product_name"),
       supabase
