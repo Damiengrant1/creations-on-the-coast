@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
+const LIBBY_CUP_SKU = "LIB-001";
+const MISCELLANEOUS_SKU = "MISC-EVENT-POS";
 
 export default function EventPosPage() {
   const [products, setProducts] = useState([]);
@@ -15,6 +17,9 @@ export default function EventPosPage() {
   const [eventId, setEventId] = useState("");
   const [accountId, setAccountId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [showMiscellaneous, setShowMiscellaneous] = useState(false);
+  const [miscellaneousDescription, setMiscellaneousDescription] = useState("");
+  const [miscellaneousPrice, setMiscellaneousPrice] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -61,12 +66,19 @@ export default function EventPosPage() {
   }
 
   const categories = useMemo(
-    () => ["All", ...Array.from(new Set(products.map((product) => product.category || "Other"))).sort()],
+    () => ["All", ...Array.from(new Set(
+      products
+        .filter((product) => product.sku !== MISCELLANEOUS_SKU)
+        .map((product) => product.category || "Other")
+    )).sort()],
     [products]
   );
 
   const visibleProducts = useMemo(
-    () => products.filter((product) => category === "All" || (product.category || "Other") === category),
+    () => products.filter((product) =>
+      product.sku !== MISCELLANEOUS_SKU &&
+      (category === "All" || (product.category || "Other") === category)
+    ),
     [products, category]
   );
 
@@ -79,6 +91,45 @@ export default function EventPosPage() {
   function addProduct(product) {
     setMessage("");
     setBasket((current) => {
+      if (product.sku === LIBBY_CUP_SKU) {
+        const singleIndex = current.findIndex(
+          (item) => item.productId === product.id && item.isLibbySingle
+        );
+
+        if (singleIndex >= 0) {
+          const next = current.filter((_, index) => index !== singleIndex);
+          const offerIndex = next.findIndex(
+            (item) => item.productId === product.id && item.isLibbyOffer
+          );
+
+          if (offerIndex >= 0) {
+            return next.map((item, index) =>
+              index === offerIndex
+                ? { ...item, quantity: item.quantity + 2 }
+                : item
+            );
+          }
+
+          return [...next, {
+            productId: product.id,
+            name: `${productLabel(product)} — 2 for £14 offer`,
+            quantity: 2,
+            price: 7,
+            cost: Number(product.cost_price || 0),
+            isLibbyOffer: true,
+          }];
+        }
+
+        return [...current, {
+          productId: product.id,
+          name: productLabel(product),
+          quantity: 1,
+          price: Number(product.selling_price || 0),
+          cost: Number(product.cost_price || 0),
+          isLibbySingle: true,
+        }];
+      }
+
       const existing = current.find((item) => item.productId === product.id && item.price === Number(product.selling_price || 0));
       if (existing) {
         return current.map((item) => item.productId === product.id && item.price === Number(product.selling_price || 0)
@@ -94,6 +145,38 @@ export default function EventPosPage() {
         cost: Number(product.cost_price || 0),
       }];
     });
+  }
+
+  function addMiscellaneousItem() {
+    const description = miscellaneousDescription.trim();
+    const price = Number(miscellaneousPrice);
+    const miscellaneousProduct = products.find(
+      (product) => product.sku === MISCELLANEOUS_SKU
+    );
+
+    if (!description) {
+      setMessage("Enter what the miscellaneous item was.");
+      return;
+    }
+    if (!miscellaneousProduct || Number.isNaN(price) || price < 0) {
+      setMessage("Enter a valid miscellaneous price.");
+      return;
+    }
+
+    setBasket((current) => [
+      ...current,
+      {
+        productId: miscellaneousProduct.id,
+        name: `Miscellaneous — ${description}`,
+        quantity: 1,
+        price,
+        cost: 0,
+      },
+    ]);
+    setMiscellaneousDescription("");
+    setMiscellaneousPrice("");
+    setShowMiscellaneous(false);
+    setMessage("");
   }
 
   function updateItem(index, changes) {
@@ -211,6 +294,7 @@ export default function EventPosPage() {
         <section>
           <div style={categoryRowStyle}>
             {categories.map((item) => <button key={item} type="button" onClick={() => setCategory(item)} style={category === item ? selectedCategoryStyle : categoryStyle}>{item}</button>)}
+            <button type="button" onClick={() => setShowMiscellaneous(true)} style={miscellaneousButtonStyle}>+ Miscellaneous</button>
           </div>
           {loading ? <div style={panelStyle}>Loading products…</div> : <div style={productGridStyle}>
             {visibleProducts.map((product) => <button key={product.id} type="button" onClick={() => addProduct(product)} style={productButtonStyle}>
@@ -237,6 +321,25 @@ export default function EventPosPage() {
           <button type="button" disabled={saving || !basket.length} onClick={completeSale} style={completeStyle}>{saving ? "Completing sale…" : `Complete Sale — ${money(total)}`}</button>
         </aside>
       </div>
+
+      {showMiscellaneous && (
+        <div style={modalBackdropStyle}>
+          <section style={modalStyle}>
+            <h2 style={{ marginTop: 0 }}>Add Miscellaneous Item</h2>
+            <p style={{ color: "#666", marginTop: 0 }}>Use this for an item not yet in the product list.</p>
+            <label style={labelStyle}>What was sold?
+              <input value={miscellaneousDescription} onChange={(event) => setMiscellaneousDescription(event.target.value)} placeholder="e.g. Custom keyring" style={inputStyle} autoFocus />
+            </label>
+            <label style={{ ...labelStyle, marginTop: "14px" }}>Price (£)
+              <input type="number" min="0" step="0.01" value={miscellaneousPrice} onChange={(event) => setMiscellaneousPrice(event.target.value)} placeholder="0.00" style={inputStyle} />
+            </label>
+            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+              <button type="button" onClick={addMiscellaneousItem} style={completeStyle}>Add to Basket</button>
+              <button type="button" onClick={() => setShowMiscellaneous(false)} style={secondaryButtonStyle}>Cancel</button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
@@ -251,6 +354,7 @@ const layoutStyle = { maxWidth: "1500px", margin: "0 auto", display: "grid", gri
 const categoryRowStyle = { display: "flex", flexWrap: "wrap", gap: "9px", marginBottom: "16px" };
 const categoryStyle = { border: "1px solid #bbb", background: "#fff", borderRadius: "9px", padding: "11px 14px", fontWeight: "700", cursor: "pointer" };
 const selectedCategoryStyle = { ...categoryStyle, background: "#111", color: "#fff", borderColor: "#111" };
+const miscellaneousButtonStyle = { ...categoryStyle, background: "#fff7ed", borderColor: "#d97706", color: "#92400e" };
 const productGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "12px" };
 const productButtonStyle = { minHeight: "125px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "16px", background: "#fff", border: "1px solid #ddd", borderRadius: "13px", cursor: "pointer", fontSize: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" };
 const basketStyle = { position: "sticky", top: "16px", background: "#fff", padding: "20px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)" };
@@ -268,3 +372,5 @@ const secondaryButtonStyle = { padding: "12px 16px", background: "#fff", border:
 const panelStyle = { background: "#fff", padding: "24px", borderRadius: "14px" };
 const successStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#edf9f0", border: "1px solid #b9e5c2", borderRadius: "10px", color: "#166534", fontWeight: "700" };
 const errorStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#fff0f0", border: "1px solid #f1c1c1", borderRadius: "10px", color: "#9b1c1c", fontWeight: "700" };
+const modalBackdropStyle = { position: "fixed", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.45)", display: "grid", placeItems: "center", padding: "20px" };
+const modalStyle = { width: "min(100%, 440px)", background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" };
