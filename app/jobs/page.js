@@ -155,99 +155,108 @@ export default function JobsPage() {
     [stockLevels]
   );
 
-  const reservedByJob = useMemo(() => {
-    const reservations = new Map();
-    jobs
-      .filter((job) => !job.sale_id && !CLOSED_STATUSES.has(job.status))
-      .forEach((job) => {
-        const reserved = new Map();
-        (job.job_items || []).forEach((item) => {
-          const product = item.product_id ? productMap.get(item.product_id) : null;
-          if (!product?.track_stock) return;
-          reserved.set(
-            item.product_id,
-            (reserved.get(item.product_id) || 0) + Number(item.quantity || 0)
-          );
-        });
-        reservations.set(job.id, reserved);
-      });
-    return reservations;
-  }, [jobs, productMap]);
+  const stockStatusByJob = useMemo(() => {
+    const statuses = new Map();
+    const allocatedByProduct = new Map();
 
-  const totalReservedByProduct = useMemo(() => {
-    const totals = new Map();
-    reservedByJob.forEach((reservation) => {
-      reservation.forEach((quantity, productId) => {
-        totals.set(productId, (totals.get(productId) || 0) + quantity);
+    const activeUnpaidJobs = jobs
+      .filter((job) => !job.sale_id && !CLOSED_STATUSES.has(job.status))
+      .sort((a, b) => {
+        const firstDate = a.received_date || a.created_at || "";
+        const secondDate = b.received_date || b.created_at || "";
+
+        if (firstDate !== secondDate) return firstDate.localeCompare(secondDate);
+        return String(a.created_at || "").localeCompare(String(b.created_at || ""));
+      });
+
+    activeUnpaidJobs.forEach((job) => {
+      const requiredByProduct = new Map();
+      let hasUnlinkedItem = false;
+
+      (job.job_items || []).forEach((item) => {
+        if (!item.product_id) {
+          hasUnlinkedItem = true;
+          return;
+        }
+
+        const product = productMap.get(item.product_id);
+        if (!product) {
+          hasUnlinkedItem = true;
+          return;
+        }
+
+        if (product.track_stock) {
+          requiredByProduct.set(
+            item.product_id,
+            (requiredByProduct.get(item.product_id) || 0) + Number(item.quantity || 0)
+          );
+        }
+      });
+
+      const shortages = [];
+
+      requiredByProduct.forEach((requiredQuantity, productId) => {
+        const physicalQuantity = stockMap.get(productId) || 0;
+        const alreadyAllocated = allocatedByProduct.get(productId) || 0;
+        const availableForThisJob = Math.max(0, physicalQuantity - alreadyAllocated);
+
+        if (availableForThisJob < requiredQuantity) {
+          shortages.push(requiredQuantity - availableForThisJob);
+        }
+      });
+
+      if (shortages.length > 0) {
+        statuses.set(job.id, {
+          label: "No",
+          type: "no",
+          title: "Earlier active jobs have reserved the available stock. This job needs additional stock ordering.",
+        });
+      } else if (hasUnlinkedItem) {
+        statuses.set(job.id, {
+          label: "Check",
+          type: "check",
+          title: "At least one item is not linked to a product",
+        });
+      } else {
+        statuses.set(job.id, {
+          label: "Yes",
+          type: "yes",
+          title: "Stock is available after allocating it to earlier active jobs first",
+        });
+      }
+
+      requiredByProduct.forEach((requiredQuantity, productId) => {
+        allocatedByProduct.set(
+          productId,
+          (allocatedByProduct.get(productId) || 0) + requiredQuantity
+        );
       });
     });
-    return totals;
-  }, [reservedByJob]);
+
+    return statuses;
+  }, [jobs, productMap, stockMap]);
 
   function getStockStatus(job) {
     if (job.sale_id) {
       return { label: "Deducted", type: "check", title: "Stock was already deducted by this job's sale. It is not deducted again when the job is completed." };
     }
-    const items = job.job_items || [];
 
-    if (items.length === 0) {
+    if (job.status === "cancelled") {
+      return { label: "Released", type: "check", title: "Cancelled jobs do not reserve stock." };
+    }
+
+    if (job.status === "completed") {
+      return { label: "Complete", type: "check", title: "Completed jobs do not reserve stock." };
+    }
+
+    if ((job.job_items || []).length === 0) {
       return { label: "Check", type: "check", title: "No job items" };
     }
 
-    const requiredByProduct = new Map();
-    let hasUnlinkedItem = false;
-
-    items.forEach((item) => {
-      if (!item.product_id) {
-        hasUnlinkedItem = true;
-        return;
-      }
-
-      const product = productMap.get(item.product_id);
-
-      if (!product) {
-        hasUnlinkedItem = true;
-        return;
-      }
-
-      if (product.track_stock) {
-        requiredByProduct.set(
-          item.product_id,
-          (requiredByProduct.get(item.product_id) || 0) +
-            Number(item.quantity || 0)
-        );
-      }
-    });
-
-    for (const [productId, requiredQuantity] of requiredByProduct) {
-      const otherReservations =
-        (totalReservedByProduct.get(productId) || 0) -
-        (reservedByJob.get(job.id)?.get(productId) || 0);
-      const availableForThisJob = Math.max(
-        0,
-        (stockMap.get(productId) || 0) - otherReservations
-      );
-      if (availableForThisJob < requiredQuantity) {
-        return {
-          label: "No",
-          type: "no",
-          title: "At least one item is reserved for another active job or needs ordering",
-        };
-      }
-    }
-
-    if (hasUnlinkedItem) {
-      return {
-        label: "Check",
-        type: "check",
-        title: "At least one item is not linked to a product",
-      };
-    }
-
-    return {
-      label: "Yes",
-      type: "yes",
-      title: "All stock-tracked items are available after reservations for other active jobs",
+    return stockStatusByJob.get(job.id) || {
+      label: "Check",
+      type: "check",
+      title: "Could not calculate stock availability",
     };
   }
 
