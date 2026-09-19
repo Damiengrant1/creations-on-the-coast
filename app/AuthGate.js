@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
 
 const AccessContext = createContext({ role: null, isAdmin: false });
+const ACCESS_CACHE_KEY = "creations-access-cache-v1";
 
 export function useAccess() {
   return useContext(AccessContext);
@@ -22,6 +23,15 @@ export default function AuthGate({ children }) {
 
   useEffect(() => {
     let mounted = true;
+
+    function cachedAccessFor(userId) {
+      try {
+        const cached = JSON.parse(window.localStorage.getItem(ACCESS_CACHE_KEY) || "null");
+        return cached?.userId === userId && cached?.active ? cached : null;
+      } catch {
+        return null;
+      }
+    }
 
     async function loadAccess(nextSession) {
       if (!nextSession) {
@@ -42,8 +52,18 @@ export default function AuthGate({ children }) {
 
       if (!mounted) return;
 
+      const cachedAccess = error && !navigator.onLine ? cachedAccessFor(nextSession.user.id) : null;
+      const nextAccess = !error && data?.active ? data : cachedAccess;
+      if (!error && data?.active) {
+        window.localStorage.setItem(ACCESS_CACHE_KEY, JSON.stringify({
+          userId: nextSession.user.id,
+          role: data.role,
+          active: true,
+        }));
+      }
+
       setSession(nextSession);
-      setAccess(!error && data?.active ? data : null);
+      setAccess(nextAccess);
       setChecking(false);
 
       if (isLoginPage) router.replace("/");
