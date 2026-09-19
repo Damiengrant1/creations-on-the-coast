@@ -7,6 +7,35 @@ import { supabase } from "../../lib/supabase";
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 const LIBBY_CUP_SKU = "LIB-001";
 const MISCELLANEOUS_SKU = "MISC-EVENT-POS";
+const POS_CACHE_KEY = "creations-event-pos-cache-v1";
+const OFFLINE_SALES_KEY = "creations-event-pos-offline-sales-v1";
+
+function readStoredJson(key, fallback) {
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function createOfflineSaleId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+function isNetworkFailure(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return !navigator.onLine || message.includes("failed to fetch") || message.includes("network") || message.includes("load failed");
+}
 
 export default function EventPosPage() {
   const [products, setProducts] = useState([]);
@@ -23,9 +52,29 @@ export default function EventPosPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [pendingOfflineSales, setPendingOfflineSales] = useState(0);
+  const [offlineMode, setOfflineMode] = useState(false);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    setPendingOfflineSales(readStoredJson(OFFLINE_SALES_KEY, []).length);
+    const syncWhenOnline = () => {
+      setOfflineMode(!navigator.onLine);
+      if (navigator.onLine) flushOfflineSales();
+    };
+
+    window.addEventListener("online", syncWhenOnline);
+    window.addEventListener("offline", syncWhenOnline);
+    syncWhenOnline();
+    return () => {
+      window.removeEventListener("online", syncWhenOnline);
+      window.removeEventListener("offline", syncWhenOnline);
+    };
   }, []);
 
   async function loadData() {
@@ -51,7 +100,17 @@ export default function EventPosPage() {
 
     const error = productResult.error || accountResult.error || eventResult.error;
     if (error) {
-      setMessage(`Could not load the POS: ${error.message}`);
+      const cached = readStoredJson(POS_CACHE_KEY, null);
+      if (cached?.products?.length && !navigator.onLine) {
+        setProducts(cached.products);
+        setAccounts(cached.accounts || []);
+        setEvents(cached.events || []);
+        setAccountId(cached.accountId || "");
+        setOfflineMode(true);
+        setMessage("Offline mode — using the last saved product list.");
+      } else {
+        setMessage(`Could not load the POS: ${error.message}`);
+      }
     } else {
       const loadedAccounts = accountResult.data || [];
       setProducts(productResult.data || []);
@@ -61,8 +120,49 @@ export default function EventPosPage() {
         account.account_name.toLowerCase().includes("cash")
       );
       setAccountId(cashAccount?.id || loadedAccounts[0]?.id || "");
+      writeStoredJson(POS_CACHE_KEY, {
+        products: productResult.data || [],
+        accounts: loadedAccounts,
+        events: eventResult.data || [],
+        accountId: cashAccount?.id || loadedAccounts[0]?.id || "",
+      });
     }
     setLoading(false);
+  }
+
+  async function uploadSale(sale) {
+    const { error } = await supabase.rpc("record_event_pos_sale", {
+      p_offline_event_pos_id: sale.offlineId,
+      p_sale_datetime: sale.saleDatetime,
+      p_payment_method: sale.paymentMethod,
+      p_account_id: sale.accountId,
+      p_event_id: sale.eventId || null,
+      p_items: sale.items,
+    });
+    if (error) throw error;
+  }
+
+  async function flushOfflineSales() {
+    if (!navigator.onLine) return;
+    const queuedSales = readStoredJson(OFFLINE_SALES_KEY, []);
+    if (!queuedSales.length) return;
+
+    let remaining = [...queuedSales];
+    try {
+      for (const sale of queuedSales) {
+        await uploadSale(sale);
+        remaining = remaining.filter((item) => item.offlineId !== sale.offlineId);
+        writeStoredJson(OFFLINE_SALES_KEY, remaining);
+      }
+      setPendingOfflineSales(0);
+      setOfflineMode(false);
+      setMessage("Offline POS sales uploaded successfully.");
+    } catch (error) {
+      setPendingOfflineSales(remaining.length);
+      if (!isNetworkFailure(error)) {
+        setMessage(`Could not upload saved POS sales: ${error.message}`);
+      }
+    }
   }
 
   const categories = useMemo(
@@ -214,44 +314,45 @@ export default function EventPosPage() {
     }
 
     setSaving(true);
-    const { data: sale, error: saleError } = await supabase
-      .from("sales")
-      .insert({
-        sale_datetime: new Date().toISOString(),
-        customer_reference: null,
-        sales_channel: "Event POS",
-        payment_method: paymentMethod,
-        account_id: accountId,
-        event_id: eventId || null,
-        notes: "Event POS sale",
-      })
-      .select("id")
-      .single();
-
-    if (saleError) {
-      setMessage(`Could not complete sale: ${saleError.message}`);
-      setSaving(false);
-      return;
-    }
-
-    const { error: itemError } = await supabase.from("sale_items").insert(
-      basket.map((item) => ({
-        sale_id: sale.id,
-        product_id: item.productId,
+    const offlineSale = {
+      offlineId: createOfflineSaleId(),
+      saleDatetime: new Date().toISOString(),
+      paymentMethod,
+      accountId,
+      eventId: eventId || null,
+      items: basket.map((item) => ({
+        productId: item.productId,
         quantity: Number(item.quantity),
-        selling_price_each: Number(item.price),
-        cost_price_each: Number(item.cost),
-      }))
-    );
+        price: Number(item.price),
+        cost: Number(item.cost),
+      })),
+    };
 
-    if (itemError) {
-      await supabase.from("sales").delete().eq("id", sale.id);
-      setMessage(`Could not add POS items: ${itemError.message}`);
-      setSaving(false);
-      return;
+    try {
+      if (!navigator.onLine) throw new Error("Offline");
+      await uploadSale(offlineSale);
+      setMessage(`Sale completed — ${money(total)}`);
+      setOfflineMode(false);
+    } catch (error) {
+      if (!isNetworkFailure(error)) {
+        setMessage(`Could not complete sale: ${error.message}`);
+        setSaving(false);
+        return;
+      }
+
+      try {
+        const queuedSales = readStoredJson(OFFLINE_SALES_KEY, []);
+        writeStoredJson(OFFLINE_SALES_KEY, [...queuedSales, offlineSale]);
+        setPendingOfflineSales(queuedSales.length + 1);
+        setOfflineMode(true);
+        setMessage(`Sale saved offline — ${money(total)} will upload automatically when connected.`);
+      } catch {
+        setMessage("This iPad could not save the sale offline. Reconnect to the internet before completing it.");
+        setSaving(false);
+        return;
+      }
     }
 
-    setMessage(`Sale completed — ${money(total)}`);
     setBasket([]);
     setSaving(false);
   }
@@ -267,7 +368,14 @@ export default function EventPosPage() {
         <button type="button" onClick={() => setBasket([])} disabled={!basket.length} style={secondaryButtonStyle}>Clear basket</button>
       </header>
 
-      {message && <div style={message.toLowerCase().startsWith("sale completed") ? successStyle : errorStyle}>{message}</div>}
+      {message && <div style={message.toLowerCase().startsWith("sale completed") || message.toLowerCase().startsWith("sale saved") || message.toLowerCase().startsWith("offline pos") || message.toLowerCase().startsWith("offline mode") ? successStyle : errorStyle}>{message}</div>}
+
+      {(offlineMode || pendingOfflineSales > 0) && (
+        <div style={offlineStatusStyle}>
+          {offlineMode ? "Offline mode" : "Connection restored"}
+          {pendingOfflineSales > 0 ? ` — ${pendingOfflineSales} sale${pendingOfflineSales === 1 ? "" : "s"} waiting to upload.` : " — sales are being saved live."}
+        </div>
+      )}
 
       <section style={settingsStyle}>
         <label style={labelStyle}>Event
@@ -372,5 +480,6 @@ const secondaryButtonStyle = { padding: "12px 16px", background: "#fff", border:
 const panelStyle = { background: "#fff", padding: "24px", borderRadius: "14px" };
 const successStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#edf9f0", border: "1px solid #b9e5c2", borderRadius: "10px", color: "#166534", fontWeight: "700" };
 const errorStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#fff0f0", border: "1px solid #f1c1c1", borderRadius: "10px", color: "#9b1c1c", fontWeight: "700" };
+const offlineStatusStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: "10px", color: "#9a3412", fontWeight: "700" };
 const modalBackdropStyle = { position: "fixed", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.45)", display: "grid", placeItems: "center", padding: "20px" };
 const modalStyle = { width: "min(100%, 440px)", background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" };
