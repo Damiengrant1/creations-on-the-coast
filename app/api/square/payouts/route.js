@@ -105,16 +105,22 @@ export async function importSquarePayout(db, payoutId) {
   const accounts = await getAccounts(db, cfg);
   const entries = await entriesForPayout(payoutId);
   const types = [...new Set(entries.map((entry) => String(entry.type || "unknown").toUpperCase()))];
-  const gross = entries.reduce((sum, entry) => sum + pounds(entry.gross_amount_money), 0);
-  const fees = entries.reduce((sum, entry) => sum + Math.abs(pounds(entry.fee_amount_money)), 0);
+  const chargeEntries = entries.filter((entry) => String(entry.type || "").toUpperCase() === "CHARGE");
+  const instantDepositFees = entries.filter((entry) => String(entry.type || "").toUpperCase() === "DEPOSIT_FEE");
+  const gross = chargeEntries.reduce((sum, entry) => sum + pounds(entry.gross_amount_money), 0);
+  const processingFees = chargeEntries.reduce((sum, entry) => sum + Math.abs(pounds(entry.fee_amount_money)), 0);
+  // Square records the extra Instant Deposit charge as a negative DEPOSIT_FEE
+  // entry rather than in a card charge's fee_amount_money.
+  const transferFees = instantDepositFees.reduce((sum, entry) => sum + Math.abs(pounds(entry.net_amount_money)), 0);
+  const fees = processingFees + transferFees;
   const net = entries.reduce((sum, entry) => sum + pounds(entry.net_amount_money), 0);
   const payoutAmount = pounds(payout.amount_money);
   const currency = String(payout.amount_money.currency || "GBP").toUpperCase();
-  const chargesOnly = entries.length > 0 && types.every((type) => type === "CHARGE");
+  const supportedEntries = chargeEntries.length > 0 && types.every((type) => type === "CHARGE" || type === "DEPOSIT_FEE");
 
   if (
     currency !== "GBP" ||
-    !chargesOnly ||
+    !supportedEntries ||
     gross <= 0 ||
     !sameMoney(gross - fees, net) ||
     !sameMoney(net, payoutAmount)
