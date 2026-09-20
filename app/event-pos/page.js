@@ -292,7 +292,7 @@ export default function EventPosPage() {
     const account = accounts.find((item) => {
       const name = item.account_name.toLowerCase();
       if (method === "Cash") return name.includes("cash");
-      if (method === "Card") return name.includes("sumup") || name.includes("card");
+      if (method === "Card") return name.includes("square") || name.includes("sumup") || name.includes("card");
       return false;
     });
     if (account) setAccountId(account.id);
