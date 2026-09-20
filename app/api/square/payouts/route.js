@@ -160,8 +160,10 @@ async function syncPayouts(db) {
   do {
     if (cursor) params.set("cursor", cursor);
     const response = await squareGet(`/payouts?${params}`);
-    if (!Array.isArray(response.payouts)) throw new SquareError("Square returned an incomplete payout list.");
-    for (const payout of response.payouts) {
+    // Square omits the `payouts` property completely when this search has no
+    // matching results. That is a valid empty result, not an import failure.
+    const payouts = Array.isArray(response.payouts) ? response.payouts : [];
+    for (const payout of payouts) {
       const outcome = await importSquarePayout(db, String(payout.id || ""));
       if (outcome.imported) summary.imported += 1;
       if (outcome.review) summary.review += 1;
