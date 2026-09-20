@@ -709,7 +709,7 @@ export default function CashFlowPage() {
                 <form onSubmit={saveAccount}>
                   <h2 style={{ marginTop: 0 }}>Add Account</h2>
                   <p style={{ color: "#666", marginTop: "-8px" }}>
-                    Add a bank, cash, SumUp or Shopify account to track.
+                    Add a bank, cash, Square or Shopify account to track.
                   </p>
 
                   <div style={formGridStyle}>
@@ -734,7 +734,7 @@ export default function CashFlowPage() {
                       >
                         <option value="bank">Bank</option>
                         <option value="cash">Cash</option>
-                        <option value="sumup">SumUp</option>
+                        <option value="square">Square</option>
                         <option value="shopify">Shopify</option>
                       </select>
                     </Field>

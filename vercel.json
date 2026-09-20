@@ -3,6 +3,10 @@
     {
       "path": "/api/shopify/payouts",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/square/payouts",
+      "schedule": "15 8 * * *"
     }
   ]
 }

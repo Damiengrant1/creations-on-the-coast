@@ -19,6 +19,7 @@ const buttons = [
   ["Manage Transactions", "/transactions"],
   ["Reports", "/reports"],
   ["Shopify", "/shopify"],
+  ["Square Payouts", "/square"],
 ];
 
 const wait = (milliseconds) =>
