@@ -80,7 +80,7 @@ async function saveReview(db, payout, detail, entries) {
   if (result.error) throw new SquareError("Could not save the Square payout for review.");
 }
 
-export async function importSquarePayout(db, payoutId) {
+export async function importSquarePayout(db, payoutId, { allowSentInstantDeposit = false } = {}) {
   if (!payoutId || typeof payoutId !== "string") throw new SquareError("Square did not provide a payout ID.");
 
   const existing = await db
@@ -97,7 +97,9 @@ export async function importSquarePayout(db, payoutId) {
 
   const response = await squareGet(`/payouts/${encodeURIComponent(payoutId)}`);
   const payout = response?.payout;
-  if (!payout?.id || String(payout.status).toUpperCase() !== "PAID" || !payout.amount_money) return { skipped: true };
+  const payoutStatus = String(payout?.status || "").toUpperCase();
+  if (!payout?.id || !payout.amount_money || (payoutStatus !== "PAID" && payoutStatus !== "SENT")) return { skipped: true };
+  if (payoutStatus === "SENT" && !allowSentInstantDeposit) return { pending: true };
 
   const cfg = await settings(db);
   if (!cfg.enabled || !cfg.start_at || new Date(payoutDate(payout)) < new Date(cfg.start_at)) return { skipped: true };
@@ -107,6 +109,9 @@ export async function importSquarePayout(db, payoutId) {
   const types = [...new Set(entries.map((entry) => String(entry.type || "unknown").toUpperCase()))];
   const chargeEntries = entries.filter((entry) => String(entry.type || "").toUpperCase() === "CHARGE");
   const instantDepositFees = entries.filter((entry) => String(entry.type || "").toUpperCase() === "DEPOSIT_FEE");
+  // A SENT payout is only safe to record early when Square has identified it as
+  // an Instant Deposit. Normal scheduled payouts remain pending until PAID.
+  if (payoutStatus === "SENT" && instantDepositFees.length === 0) return { pending: true };
   const gross = chargeEntries.reduce((sum, entry) => sum + pounds(entry.gross_amount_money), 0);
   const processingFees = chargeEntries.reduce((sum, entry) => sum + Math.abs(pounds(entry.fee_amount_money)), 0);
   // Square records the extra Instant Deposit charge as a negative DEPOSIT_FEE
@@ -171,7 +176,12 @@ async function syncPayouts(db) {
     for (const payout of payouts) {
       const payoutStatus = String(payout.status || "").toUpperCase();
       if (payoutStatus === "SENT") {
-        summary.pending += 1;
+        const outcome = await importSquarePayout(db, String(payout.id || ""), { allowSentInstantDeposit: true });
+        if (outcome.imported) summary.imported += 1;
+        if (outcome.review) summary.review += 1;
+        if (outcome.duplicate) summary.duplicate += 1;
+        if (outcome.pending) summary.pending += 1;
+        if (outcome.skipped) summary.skipped += 1;
         continue;
       }
       if (payoutStatus === "FAILED") {
