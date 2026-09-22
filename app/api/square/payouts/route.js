@@ -155,13 +155,12 @@ async function syncPayouts(db) {
 
   await getAccounts(db, cfg);
   const params = new URLSearchParams({
-    status: "PAID",
     begin_time: new Date(cfg.start_at).toISOString(),
     limit: "100",
     sort_order: "ASC",
   });
   let cursor = "";
-  const summary = { imported: 0, review: 0, duplicate: 0, skipped: 0 };
+  const summary = { imported: 0, review: 0, duplicate: 0, pending: 0, failed: 0, skipped: 0 };
 
   do {
     if (cursor) params.set("cursor", cursor);
@@ -170,6 +169,19 @@ async function syncPayouts(db) {
     // matching results. That is a valid empty result, not an import failure.
     const payouts = Array.isArray(response.payouts) ? response.payouts : [];
     for (const payout of payouts) {
+      const payoutStatus = String(payout.status || "").toUpperCase();
+      if (payoutStatus === "SENT") {
+        summary.pending += 1;
+        continue;
+      }
+      if (payoutStatus === "FAILED") {
+        summary.failed += 1;
+        continue;
+      }
+      if (payoutStatus !== "PAID") {
+        summary.skipped += 1;
+        continue;
+      }
       const outcome = await importSquarePayout(db, String(payout.id || ""));
       if (outcome.imported) summary.imported += 1;
       if (outcome.review) summary.review += 1;
@@ -236,8 +248,10 @@ export async function POST(request) {
     }
 
     const result = await syncPayouts(db);
+    const awaiting = result.summary.pending ? ` ${result.summary.pending} awaiting Square confirmation.` : "";
+    const failed = result.summary.failed ? ` ${result.summary.failed} failed in Square.` : "";
     return reply({
-      message: `Payout check complete: ${result.summary.imported} imported, ${result.summary.review} need review, ${result.summary.duplicate} already recorded.`,
+      message: `Payout check complete: ${result.summary.imported} imported, ${result.summary.review} need review, ${result.summary.duplicate} already recorded.${awaiting}${failed}`,
       ...result,
     });
   } catch (error) {
