@@ -23,12 +23,30 @@ function blankItem() {
     productId: "",
     quantity: 1,
     netCostPerUnit: "",
+    priceMode: "unit",
+    totalCost: "",
+    totalIncludesVat: false,
     vatRate: "0.2",
   };
 }
 
+function netUnitCost(item) {
+  if (item.priceMode !== "total") return Number(item.netCostPerUnit || 0);
+  const quantity = Number(item.quantity);
+  if (!(quantity > 0)) return 0;
+  const total = Number(item.totalCost || 0);
+  return total / quantity / (item.totalIncludesVat ? 1 + Number(item.vatRate) : 1);
+}
+
 function grossCostPerUnit(item) {
-  return Number(item.netCostPerUnit || 0) * (1 + Number(item.vatRate || 0));
+  return netUnitCost(item) * (1 + Number(item.vatRate || 0));
+}
+
+function grossLineTotal(item) {
+  const total = item.priceMode === "total" && item.totalIncludesVat
+    ? Number(item.totalCost || 0)
+    : Number(item.quantity || 0) * grossCostPerUnit(item);
+  return Math.round((total + Number.EPSILON) * 100) / 100;
 }
 
 export default function StockPurchasesPage() {
@@ -122,6 +140,7 @@ export default function StockPurchasesPage() {
           ...item,
           productId,
           netCostPerUnit: "",
+          totalCost: "",
         };
       })
     );
@@ -144,8 +163,7 @@ export default function StockPurchasesPage() {
       items.reduce(
         (sum, item) =>
           sum +
-          Number(item.quantity || 0) *
-            grossCostPerUnit(item),
+          grossLineTotal(item),
         0
       ),
     [items]
@@ -181,14 +199,15 @@ export default function StockPurchasesPage() {
         !item.productId ||
         !Number.isInteger(Number(item.quantity)) ||
         Number(item.quantity) <= 0 ||
-        item.netCostPerUnit === "" ||
-        Number(item.netCostPerUnit) < 0 ||
+        (item.priceMode === "total" ? item.totalCost : item.netCostPerUnit) === "" ||
+        !Number.isFinite(netUnitCost(item)) ||
+        netUnitCost(item) < 0 ||
         ![0, 0.2].includes(Number(item.vatRate))
     );
 
     if (invalidItem) {
       setMessage(
-        "Complete every item with a product, whole-number quantity, net cost and VAT choice."
+        "Complete every item with a product, whole-number quantity, price and VAT choice."
       );
       setMessageType("error");
       return;
@@ -241,7 +260,7 @@ export default function StockPurchasesPage() {
 
     const purchaseItems = items.map((item) => {
       const quantity = Number(item.quantity);
-      const netCostPerUnit = Number(item.netCostPerUnit);
+      const netCostPerUnit = netUnitCost(item);
       const vatRate = Number(item.vatRate);
 
       return {
@@ -505,7 +524,7 @@ export default function StockPurchasesPage() {
 
               {items.map((item, index) => {
                 const grossUnitCost = grossCostPerUnit(item);
-                const lineTotal = Number(item.quantity || 0) * grossUnitCost;
+                const lineTotal = grossLineTotal(item);
 
                 return (
                   <div
@@ -548,7 +567,7 @@ export default function StockPurchasesPage() {
                       style={{
                         display: "grid",
                         gridTemplateColumns:
-                          "minmax(260px, 2fr) repeat(4, minmax(120px, 1fr))",
+                          "repeat(auto-fit, minmax(170px, 1fr))",
                         gap: "14px",
                         alignItems: "end",
                       }}
@@ -595,18 +614,28 @@ export default function StockPurchasesPage() {
                       </div>
 
                       <div>
-                        <label style={labelStyle}>
-                          Net Cost Each (£)
+                        <label style={labelStyle} htmlFor={`price-mode-${index}`}>Enter Price As</label>
+                        <select id={`price-mode-${index}`} value={item.priceMode}
+                          onChange={(event) => updateItem(index, "priceMode", event.target.value)} style={fieldStyle}>
+                          <option value="unit">Unit price</option>
+                          <option value="total">Total for this quantity</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={labelStyle} htmlFor={`price-${index}`}>
+                          {item.priceMode === "total" ? "Total Price (£)" : "Net Cost Each (£)"}
                         </label>
                         <input
                           type="number"
                           min="0"
-                          step="0.01"
-                          value={item.netCostPerUnit}
+                          id={`price-${index}`}
+                          step={item.priceMode === "total" ? "0.01" : "any"}
+                          value={item.priceMode === "total" ? item.totalCost : item.netCostPerUnit}
                           onChange={(event) =>
                             updateItem(
                               index,
-                              "netCostPerUnit",
+                              item.priceMode === "total" ? "totalCost" : "netCostPerUnit",
                               event.target.value
                             )
                           }
@@ -614,6 +643,17 @@ export default function StockPurchasesPage() {
                           required
                         />
                       </div>
+
+                      {item.priceMode === "total" && (
+                        <div>
+                          <label style={labelStyle} htmlFor={`vat-basis-${index}`}>Total Price Is</label>
+                          <select id={`vat-basis-${index}`} value={String(item.totalIncludesVat)}
+                            onChange={(event) => updateItem(index, "totalIncludesVat", event.target.value === "true")} style={fieldStyle}>
+                            <option value="false">Excluding VAT</option>
+                            <option value="true">Including VAT</option>
+                          </select>
+                        </div>
+                      )}
 
                       <div>
                         <label style={labelStyle}>VAT</label>
@@ -624,13 +664,13 @@ export default function StockPurchasesPage() {
                           }
                           style={fieldStyle}
                         >
-                          <option value="0.2">Add VAT (20%)</option>
+                          <option value="0.2">{item.priceMode === "total" && item.totalIncludesVat ? "VAT included (20%)" : "Add VAT (20%)"}</option>
                           <option value="0">No VAT</option>
                         </select>
                       </div>
 
                       <div>
-                        <label style={labelStyle}>Gross Stock Cost</label>
+                        <label style={labelStyle}>Gross Cost Each</label>
                         <div
                           style={{
                             ...fieldStyle,
@@ -732,10 +772,10 @@ export default function StockPurchasesPage() {
                     fontSize: "14px",
                   }}
                 >
-                  Enter the net cost from the supplier invoice, then choose whether
-                  VAT applies. The VAT-inclusive Stock Cost and Total Direct Cost
-                  will update automatically. Delivery is entered as a gross amount
-                  and remains separate from unit cost.
+                  Enter a unit price or the total price for each product’s quantity.
+                  For a total, choose whether VAT is included. Unit costs are calculated
+                  automatically without rounding to whole pennies before saving.
+                  Delivery is entered including VAT and remains separate.
                 </div>
               </div>
 
