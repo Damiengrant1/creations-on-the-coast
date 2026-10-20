@@ -49,6 +49,26 @@ function grossLineTotal(item) {
   return Math.round((total + Number.EPSILON) * 100) / 100;
 }
 
+// Allocate whole pennies proportionally so saved line totals exactly match the order.
+function supplierDiscount(lines, type, value) {
+  const cents = lines.map((line) => Math.round(line * 100));
+  const subtotal = cents.reduce((sum, line) => sum + line, 0);
+  const input = Number(value || 0);
+  const discount = Math.round(type === "percent" ? subtotal * input / 100 : input * 100);
+  if (!Number.isFinite(input) || input < 0 || (type === "percent" && input > 100) || discount > subtotal) {
+    return { error: "Supplier discount must be between zero and the stock subtotal (maximum 100%).", amount: 0, lines };
+  }
+  if (!subtotal || !discount) return { amount: 0, lines };
+  const shares = cents.map((line, index) => {
+    const exact = discount * line / subtotal;
+    return { index, pennies: Math.floor(exact), remainder: exact - Math.floor(exact) };
+  });
+  let remaining = discount - shares.reduce((sum, share) => sum + share.pennies, 0);
+  const ranked = [...shares].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (let i = 0; i < remaining; i++) ranked[i].pennies++;
+  return { amount: discount / 100, lines: cents.map((line, index) => (line - shares[index].pennies) / 100) };
+}
+
 export default function StockPurchasesPage() {
   const [products, setProducts] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -59,6 +79,8 @@ export default function StockPurchasesPage() {
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [deliveryFee, setDeliveryFee] = useState("");
+  const [discountType, setDiscountType] = useState("amount");
+  const [discountValue, setDiscountValue] = useState("");
 
   const [items, setItems] = useState([blankItem()]);
 
@@ -169,7 +191,9 @@ export default function StockPurchasesPage() {
     [items]
   );
   const deliveryTotal = Number(deliveryFee || 0);
-  const purchaseTotal = stockSubtotal + deliveryTotal;
+  const discount = supplierDiscount(items.map(grossLineTotal), discountType, discountValue);
+  const discountedStockTotal = Math.round((stockSubtotal - discount.amount) * 100) / 100;
+  const purchaseTotal = discountedStockTotal + deliveryTotal;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -219,6 +243,12 @@ export default function StockPurchasesPage() {
       return;
     }
 
+    if (discount.error) {
+      setMessage(discount.error);
+      setMessageType("error");
+      return;
+    }
+
     const selectedProductIds = items.map((item) => item.productId);
     const duplicateProduct = selectedProductIds.some(
       (productId, index) =>
@@ -242,7 +272,9 @@ export default function StockPurchasesPage() {
         supplier: supplier.trim(),
         account_id: accountId,
         reference: reference.trim() || null,
-        notes: notes.trim() || null,
+        notes: [notes.trim(), discount.amount > 0
+          ? `Supplier discount: ${discountType === "percent" ? `${Number(discountValue)}% — ` : ""}£${discount.amount.toFixed(2)} including VAT, applied to stock only. Stock before discount £${stockSubtotal.toFixed(2)}; after discount £${discountedStockTotal.toFixed(2)}.`
+          : ""].filter(Boolean).join("\n") || null,
         delivery_fee: deliveryTotal,
       })
       .select("id")
@@ -258,10 +290,13 @@ export default function StockPurchasesPage() {
       return;
     }
 
-    const purchaseItems = items.map((item) => {
+    const purchaseItems = items.map((item, index) => {
       const quantity = Number(item.quantity);
-      const netCostPerUnit = netUnitCost(item);
       const vatRate = Number(item.vatRate);
+      const grossUnitCost = discount.amount > 0
+        ? discount.lines[index] / quantity
+        : grossCostPerUnit(item);
+      const netCostPerUnit = grossUnitCost / (1 + vatRate);
 
       return {
         stock_purchase_id: purchase.id,
@@ -269,7 +304,7 @@ export default function StockPurchasesPage() {
         quantity,
         net_cost_per_unit: netCostPerUnit,
         vat_rate: vatRate,
-        cost_per_unit: netCostPerUnit * (1 + vatRate),
+        cost_per_unit: grossUnitCost,
       };
     });
 
@@ -311,6 +346,8 @@ export default function StockPurchasesPage() {
     setReference("");
     setNotes("");
     setDeliveryFee("");
+    setDiscountValue("");
+    setDiscountType("amount");
     setItems([blankItem()]);
     setSaving(false);
   }
@@ -723,6 +760,23 @@ export default function StockPurchasesPage() {
                 boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
               }}
             >
+              <h2 style={{ marginTop: 0 }}>Supplier Discount</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+                <div>
+                  <label htmlFor="supplier-discount-type" style={labelStyle}>Discount Type</label>
+                  <select id="supplier-discount-type" value={discountType} onChange={(event) => { setDiscountType(event.target.value); setDiscountValue(""); }} style={fieldStyle}>
+                    <option value="amount">Amount (£ including VAT)</option>
+                    <option value="percent">Percentage (%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="supplier-discount" style={labelStyle}>Supplier Discount ({discountType === "percent" ? "%" : "£"})</label>
+                  <input id="supplier-discount" type="number" min="0" max={discountType === "percent" ? 100 : stockSubtotal} step="0.01" placeholder="0.00" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} style={fieldStyle} />
+                </div>
+              </div>
+              <p style={{ color: "#666", lineHeight: 1.5 }}>Optional. Applies to the stock subtotal including VAT, before delivery. Enter prices before this discount; do not enter a discount already included in your item prices.</p>
+              {discount.error && <p role="alert" style={{ color: "#9b1c1c" }}>{discount.error}</p>}
+
               <div
                 style={{
                   display: "flex",
@@ -735,11 +789,20 @@ export default function StockPurchasesPage() {
               >
                 <div>
                   <div style={{ color: "#666", marginBottom: "5px" }}>
-                    Stock Subtotal
+                    Stock Before Discount
                   </div>
                   <div style={{ fontSize: "20px", fontWeight: "700" }}>
                     £{stockSubtotal.toFixed(2)}
                   </div>
+                </div>
+
+                <div>
+                  <div style={{ color: "#666", marginBottom: "5px" }}>Supplier Discount</div>
+                  <div style={{ fontSize: "20px", fontWeight: "700" }}>−£{discount.amount.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div style={{ color: "#666", marginBottom: "5px" }}>Stock After Discount</div>
+                  <div style={{ fontSize: "20px", fontWeight: "700" }}>£{discountedStockTotal.toFixed(2)}</div>
                 </div>
 
                 <div>
@@ -781,7 +844,7 @@ export default function StockPurchasesPage() {
 
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || Boolean(discount.error)}
                 style={{
                   width: "100%",
                   padding: "16px",
