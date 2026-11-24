@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -352,48 +353,24 @@ export default function StockPurchasesPage() {
     setSaving(false);
   }
 
-  const fieldStyle = {
-    width: "100%",
-    padding: "12px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-    background: "#fff",
-  };
+  const fieldStyle = { ...ui.field };
 
-  const labelStyle = {
-    display: "block",
-    fontWeight: "600",
-    marginBottom: "6px",
-  };
+  const labelStyle = { ...ui.label };
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--sand)",
-        padding: "40px 20px",
-        fontFamily: "var(--font)",
-      }}
+      style={{ ...ui.page }}
     >
       <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
         <Link
           href="/"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            color: "var(--text-2)",
-          }}
+          style={ui.back}
         >
           ← Home
         </Link>
 
         <h1
-          style={{
-            fontSize: "36px",
-            margin: "0 0 8px",
-          }}
+          style={{ fontSize: "30px", margin: "0 0 8px" }}
         >
           Record Stock Purchase
         </h1>
@@ -408,7 +385,7 @@ export default function StockPurchasesPage() {
           the selected account will update automatically.
         </p>
 
-        <Link href="/supplier-credits" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)", fontWeight: "600" }}>
+        <Link href="/supplier-credits" style={ui.back}>
           Record a supplier refund or credit note →
         </Link>
 
@@ -445,13 +422,7 @@ export default function StockPurchasesPage() {
         ) : (
           <form onSubmit={handleSubmit}>
             <div
-              style={{
-                background: "#fff",
-                padding: "28px",
-                borderRadius: "14px",
-                boxShadow: "var(--shadow)",
-                marginBottom: "20px",
-              }}
+              style={{ ...ui.card, marginBottom: "20px" }}
             >
               <h2 style={{ marginTop: 0 }}>Purchase Details</h2>
 
@@ -549,13 +520,7 @@ export default function StockPurchasesPage() {
             </div>
 
             <div
-              style={{
-                background: "#fff",
-                padding: "28px",
-                borderRadius: "14px",
-                boxShadow: "var(--shadow)",
-                marginBottom: "20px",
-              }}
+              style={{ ...ui.card, marginBottom: "20px" }}
             >
               <h2 style={{ marginTop: 0 }}>Stock Purchased</h2>
 
@@ -753,12 +718,7 @@ export default function StockPurchasesPage() {
             </div>
 
             <div
-              style={{
-                background: "#fff",
-                padding: "28px",
-                borderRadius: "14px",
-                boxShadow: "var(--shadow)",
-              }}
+              style={{ ...ui.card }}
             >
               <h2 style={{ marginTop: 0 }}>Supplier Discount</h2>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
@@ -850,7 +810,7 @@ export default function StockPurchasesPage() {
                   padding: "16px",
                   border: "none",
                   borderRadius: "9px",
-                  background: saving ? "var(--muted)" : "var(--ink)",
+                  background: saving ? "var(--muted)" : "var(--sea)",
                   color: "#fff",
                   fontSize: "17px",
                   fontWeight: "700",

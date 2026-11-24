@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../../lib/supabase";
+import ui from "../../../../lib/ui";
+import { Choice, Field, FormSection, PageHeader, StickyActions } from "../../../FormParts";
 
 const STATUSES = [
   ["new", "New"],
@@ -239,7 +241,7 @@ export default function EditJobPage() {
     if (!item.productId) {
       return {
         type: "check",
-        text: "Select a catalogue product to check its stock.",
+        text: "Custom item, so stock can't be checked.",
       };
     }
 
@@ -250,7 +252,7 @@ export default function EditJobPage() {
     }
 
     if (!product.track_stock) {
-      return { type: "info", text: "Stock is not tracked for this product." };
+      return { type: "info", text: "Stock isn't counted for this product." };
     }
 
     const requiredQuantity = items
@@ -263,13 +265,13 @@ export default function EditJobPage() {
     if (availableQuantity >= requiredQuantity) {
       return {
         type: "yes",
-        text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}.`,
+        text: `Enough stock: ${availableQuantity} free (${physicalQuantity} on the shelf, ${reservedQuantity} kept for other jobs). This job needs ${requiredQuantity}.`,
       };
     }
 
     return {
       type: "no",
-      text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
+      text: `Order ${requiredQuantity - availableQuantity} more: only ${availableQuantity} free (${physicalQuantity} on the shelf, ${reservedQuantity} kept for other jobs). This job needs ${requiredQuantity}.`,
     };
   }
 
@@ -469,255 +471,208 @@ export default function EditJobPage() {
     );
   }
 
+  const stockTone = { yes: "✓", no: "⚠", check: "•", info: "i" };
+
   return (
-    <main style={pageStyle}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <Link href="/jobs" style={backLinkStyle}>
-          ← Back to Jobs
-        </Link>
-        <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
-          Edit Job #{jobNumber}
-        </h1>
-        <p style={{ color: "var(--muted)", margin: "0 0 26px" }}>
-          Correct job information, update items or convert it into a sale.
-        </p>
+    <main className="form-page">
+      <PageHeader back="/jobs" backLabel="Jobs" title={`Job #${jobNumber}${form.customerName ? ` · ${form.customerName}` : ""}`} intro="Update the job, move it on, or take payment when it's paid for." />
 
-        {saleId && (
-          <div style={successStyle}>
-            This job has already been converted to a sale. Use Manage
-            Transactions if the sale needs correcting.
+      {saleId && (
+        <div style={ui.success}>
+          ✓ Paid and recorded as a sale. To correct the sale itself, an admin can use Transactions.
+        </div>
+      )}
+
+      <form onSubmit={saveChanges}>
+        <FormSection step="1" title="Where's it up to?">
+          <div className="form-grid">
+            <Field label="Stage">
+              <select value={form.status} onChange={(e) => updateForm("status", e.target.value)} style={ui.field}>
+                {STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </Field>
+            <Field label="Due date" optional>
+              <input type="date" value={form.dueDate} onChange={(e) => updateForm("dueDate", e.target.value)} style={ui.field} />
+            </Field>
+            <Field label="Has the customer paid?" wide>
+              <Choice name="Payment" value={form.paymentStatus} onChange={(value) => updateForm("paymentStatus", value)} options={PAYMENTS} />
+            </Field>
+            <Field label="Priority" wide>
+              <Choice name="Priority" value={form.priority} onChange={(value) => updateForm("priority", value)} options={PRIORITIES} />
+            </Field>
           </div>
-        )}
+        </FormSection>
 
-        <form onSubmit={saveChanges}>
-          <Section title="Customer & Job Details">
-            <div style={gridStyle}>
-              <Field label="Date Received">
-                <input type="date" value={form.receivedDate} onChange={(e) => updateForm("receivedDate", e.target.value)} style={fieldStyle} required />
-              </Field>
-              <Field label="Customer Name">
-                <input value={form.customerName} onChange={(e) => updateForm("customerName", e.target.value)} style={fieldStyle} required />
-              </Field>
-              <Field label="Phone">
-                <input value={form.customerPhone} onChange={(e) => updateForm("customerPhone", e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Email">
-                <input type="email" value={form.customerEmail} onChange={(e) => updateForm("customerEmail", e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Order Source">
-                <select value={form.source} onChange={(e) => updateForm("source", e.target.value)} style={fieldStyle}>
-                  <option value="in_person">In Person</option>
-                  <option value="facebook">Facebook</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="website">Website</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Due Date">
-                <input type="date" value={form.dueDate} onChange={(e) => updateForm("dueDate", e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Priority">
-                <select value={form.priority} onChange={(e) => updateForm("priority", e.target.value)} style={fieldStyle}>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </Field>
-              <Field label="Current Status">
-                <select value={form.status} onChange={(e) => updateForm("status", e.target.value)} style={fieldStyle}>
-                  {STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-              </Field>
-              <Field label="Collection / Delivery">
-                <select value={form.deliveryMethod} onChange={(e) => updateForm("deliveryMethod", e.target.value)} style={fieldStyle}>
-                  <option value="">Not decided</option>
-                  <option value="collection">Collection</option>
-                  <option value="postage">Postage</option>
-                  <option value="delivery">Local Delivery</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Payment Status">
-                <select value={form.paymentStatus} onChange={(e) => updateForm("paymentStatus", e.target.value)} style={fieldStyle}>
-                  <option value="unpaid">Unpaid</option>
-                  <option value="deposit_paid">Deposit Paid</option>
-                  <option value="paid">Paid</option>
-                  <option value="refunded">Refunded</option>
-                </select>
-              </Field>
-            </div>
-          </Section>
+        <FormSection step="2" title="Customer">
+          <div className="form-grid">
+            <Field label="Customer name" wide>
+              <input value={form.customerName} onChange={(e) => updateForm("customerName", e.target.value)} style={ui.field} required />
+            </Field>
+            <Field label="Phone" optional>
+              <input type="tel" inputMode="tel" value={form.customerPhone} onChange={(e) => updateForm("customerPhone", e.target.value)} style={ui.field} />
+            </Field>
+            <Field label="Email" optional>
+              <input type="email" value={form.customerEmail} onChange={(e) => updateForm("customerEmail", e.target.value)} style={ui.field} />
+            </Field>
+            <Field label="Where did the order come from?" wide>
+              <Choice name="Order source" value={form.source} onChange={(value) => updateForm("source", value)} options={SOURCES} />
+            </Field>
+            <Field label="Collection or delivery?" wide>
+              <Choice name="Collection or delivery" value={form.deliveryMethod} onChange={(value) => updateForm("deliveryMethod", value)} options={DELIVERY} />
+            </Field>
+          </div>
+        </FormSection>
 
-          <Section title="Items Required">
-            {items.map((item, index) => {
-              const stockStatus = getItemStockStatus(item);
-
-              return (
-              <div key={index} style={itemCardStyle}>
-                <div style={itemHeadingStyle}>
+        <FormSection step="3" title="Items" hint={saleId ? "Items can't be changed once the job has been recorded as a sale." : "Link each item to a product so stock is checked and payment can be taken."}>
+          {items.map((item, index) => {
+            const stockStatus = getItemStockStatus(item);
+            return (
+              <div key={index} className="item-card">
+                <div className="item-card-head">
                   <strong>Item {index + 1}</strong>
                   {items.length > 1 && !saleId && (
-                    <button type="button" onClick={() => removeItem(index)} style={removeButtonStyle}>Remove</button>
+                    <button type="button" onClick={() => removeItem(index)} style={ui.danger}>Remove</button>
                   )}
                 </div>
-                <div style={gridStyle}>
-                  <Field label="Catalogue Product">
-                    <select value={item.productId} onChange={(e) => selectProduct(index, e.target.value)} style={fieldStyle} disabled={Boolean(saleId)}>
-                      <option value="">Manual / unlinked item</option>
+                <div className="form-grid">
+                  <Field label="Product" wide>
+                    <select value={item.productId} onChange={(e) => selectProduct(index, e.target.value)} style={ui.field} disabled={Boolean(saleId)}>
+                      <option value="">Custom item (not linked to a product)</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>{productLabel(product)}</option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Item Description">
-                    <input value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} style={fieldStyle} disabled={Boolean(saleId)} required />
+                  <Field label="Description" wide>
+                    <input value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} style={ui.field} disabled={Boolean(saleId)} required />
                   </Field>
                   <Field label="Quantity">
-                    <input type="number" min="1" step="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} style={fieldStyle} disabled={Boolean(saleId)} required />
+                    <input type="number" min="1" step="1" inputMode="numeric" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} style={ui.field} disabled={Boolean(saleId)} required />
                   </Field>
-                  <Field label="Price Each">
-                    <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} style={fieldStyle} disabled={Boolean(saleId)} />
+                  <Field label="Price each (£)" optional>
+                    <input type="number" min="0" step="0.01" inputMode="decimal" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} style={ui.field} disabled={Boolean(saleId)} />
+                  </Field>
+                  <Field label="Personalisation / instructions" optional wide>
+                    <textarea value={item.personalisation} onChange={(e) => updateItem(index, "personalisation", e.target.value)} style={{ ...ui.field, minHeight: "76px", resize: "vertical" }} disabled={Boolean(saleId)} />
                   </Field>
                 </div>
-                <div style={stockMessageStyle(stockStatus.type)}>
-                  {stockStatus.text}
-                </div>
-                <Field label="Personalisation / Item Instructions">
-                  <textarea value={item.personalisation} onChange={(e) => updateItem(index, "personalisation", e.target.value)} style={{ ...fieldStyle, minHeight: "80px" }} disabled={Boolean(saleId)} />
-                </Field>
+                {!saleId && (
+                  <div className={`stock-line ${stockStatus.type}`}>
+                    {stockTone[stockStatus.type]} {stockStatus.text}
+                  </div>
+                )}
               </div>
-              );
-            })}
-            {!saleId && (
-              <button type="button" onClick={addItem} style={secondaryButtonStyle}>+ Add Another Item</button>
-            )}
-          </Section>
-
-          <Section title="Value & Notes">
-            <div style={gridStyle}>
-              <Field label="Job Value">
-                <input type="number" min="0" step="0.01" value={form.quotedTotal} onChange={(e) => updateForm("quotedTotal", e.target.value)} style={fieldStyle} disabled={Boolean(saleId)} />
-                <div style={helpStyle}>
-                  Item total: £{itemTotal.toFixed(2)}
-                  {!totalsMatch ? " — values do not match" : ""}
-                </div>
-              </Field>
-              <Field label="Artwork / Information">
-                <textarea value={form.artworkDetails} onChange={(e) => updateForm("artworkDetails", e.target.value)} style={{ ...fieldStyle, minHeight: "100px" }} />
-              </Field>
-            </div>
-            <Field label="General Notes">
-              <textarea value={form.notes} onChange={(e) => updateForm("notes", e.target.value)} style={{ ...fieldStyle, minHeight: "100px" }} />
-            </Field>
-          </Section>
-
-          {message && (
-            <div style={success ? successStyle : errorStyle}>{message}</div>
-          )}
-
+            );
+          })}
           {!saleId && (
-            <button type="submit" disabled={saving || converting} style={saveButtonStyle}>
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
+            <button type="button" onClick={addItem} style={ui.secondary}>+ Add another item</button>
           )}
-        </form>
+        </FormSection>
+
+        <FormSection step="4" title="Value, artwork and notes">
+          <div className="form-grid">
+            <Field
+              label="Job value (£)"
+              optional
+              hint={`Items add up to £${itemTotal.toFixed(2)}.${!totalsMatch ? " This doesn't match the job value, so fix one before taking payment." : ""}`}
+            >
+              <input type="number" min="0" step="0.01" inputMode="decimal" value={form.quotedTotal} onChange={(e) => updateForm("quotedTotal", e.target.value)} style={{ ...ui.field, borderColor: totalsMatch ? undefined : "var(--coral)" }} disabled={Boolean(saleId)} />
+            </Field>
+            <Field label="Date received">
+              <input type="date" value={form.receivedDate} onChange={(e) => updateForm("receivedDate", e.target.value)} style={ui.field} required />
+            </Field>
+            <Field label="Artwork / information" optional wide>
+              <textarea value={form.artworkDetails} onChange={(e) => updateForm("artworkDetails", e.target.value)} style={{ ...ui.field, minHeight: "90px", resize: "vertical" }} />
+            </Field>
+            <Field label="Other notes" optional wide>
+              <textarea value={form.notes} onChange={(e) => updateForm("notes", e.target.value)} style={{ ...ui.field, minHeight: "80px", resize: "vertical" }} />
+            </Field>
+          </div>
+        </FormSection>
+
+        {message && <div style={success ? ui.success : ui.error}>{message}</div>}
 
         {!saleId && (
-          <Section id="take-payment" title="Take payment (records the sale)">
-            <p style={{ color: "var(--muted)", marginTop: 0 }}>
-              Use this once payment has been received in full. It will create
-              the sale, record the cash and reduce stock automatically.
-            </p>
+          <StickyActions summary={<>Job value <strong>£{(form.quotedTotal !== "" && form.quotedTotal !== null ? Number(form.quotedTotal) : itemTotal).toFixed(2)}</strong></>}>
+            <a href="#take-payment" style={ui.secondary}>💷 Take payment</a>
+            <button type="submit" disabled={saving || converting} style={ui.primary}>
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+          </StickyActions>
+        )}
+      </form>
+
+      {!saleId && (
+        <div style={{ marginTop: 26 }}>
+          <FormSection
+            id="take-payment"
+            step="£"
+            title="Take payment"
+            hint="Do this once the customer has paid in full. It records the sale and the money, and takes the items off stock."
+          >
             {!stockLinked && (
-              <div style={warningStyle}>
-                Every item must be linked to a catalogue product before this
-                job can become a sale.
-              </div>
+              <div style={ui.notice}>Every item needs to be linked to a product before you can take payment. Pick one in Items above.</div>
             )}
-            <div style={gridStyle}>
-              <Field label="Sale Date">
-                <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} style={fieldStyle} />
+            {stockLinked && !totalsMatch && (
+              <div style={ui.notice}>The job value doesn&apos;t match the items total. Fix one of them above first.</div>
+            )}
+            <div className="form-grid">
+              <Field label="Date paid">
+                <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} style={ui.field} />
               </Field>
-              <Field label="Payment Method">
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={fieldStyle}>
-                  <option>Bank Transfer</option>
-                  <option>Card</option>
-                  <option>Cash</option>
-                  <option>Shopify Payments</option>
-                  <option>PayPal</option>
-                  <option>Other</option>
-                </select>
-              </Field>
-              <Field label="Account Payment Went Into">
-                <select value={accountId} onChange={(e) => setAccountId(e.target.value)} style={fieldStyle}>
-                  <option value="">Select account</option>
+              <Field label="Paid into">
+                <select value={accountId} onChange={(e) => setAccountId(e.target.value)} style={ui.field}>
+                  <option value="">Choose account</option>
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>{account.account_name}</option>
                   ))}
                 </select>
               </Field>
+              <Field label="How did they pay?" wide>
+                <Choice name="Payment method" value={paymentMethod} onChange={setPaymentMethod} options={METHODS} />
+              </Field>
             </div>
-            <button type="button" onClick={convertToSale} disabled={converting || !stockLinked || !totalsMatch} style={convertButtonStyle}>
-              {converting ? "Saving..." : "Take payment & record sale"}
-            </button>
-          </Section>
-        )}
-      </div>
+            <div style={{ marginTop: 16 }}>
+              <button type="button" onClick={convertToSale} disabled={converting || !stockLinked || !totalsMatch} style={{ ...ui.primary, background: "var(--leaf)", width: "100%" }}>
+                {converting ? "Saving…" : `Take payment of £${itemTotal.toFixed(2)}`}
+              </button>
+            </div>
+          </FormSection>
+        </div>
+      )}
     </main>
   );
 }
 
-function Section({ id, title, children }) {
-  return (
-    <div id={id} style={{ ...sectionStyle, scrollMarginTop: "80px" }}>
-      <h2 style={{ margin: "0 0 20px" }}>{title}</h2>
-      {children}
-    </div>
-  );
-}
+const SOURCES = [
+  ["in_person", "In person"],
+  ["facebook", "Facebook"],
+  ["whatsapp", "WhatsApp"],
+  ["website", "Website"],
+  ["other", "Other"],
+];
 
-function Field({ label, children }) {
-  return (
-    <div style={{ marginBottom: "16px" }}>
-      <label style={labelStyle}>{label}</label>
-      {children}
-    </div>
-  );
-}
+const DELIVERY = [
+  ["", "Not decided"],
+  ["collection", "Collection"],
+  ["postage", "Post"],
+  ["delivery", "Local delivery"],
+  ["other", "Other"],
+];
 
-function stockMessageStyle(type) {
-  const colours = {
-    yes: { background: "#e8f7ed", color: "var(--leaf)", border: "#b8dfc3" },
-    no: { background: "var(--coral-soft)", color: "#9b2c17", border: "#efb3b3" },
-    check: { background: "#fff8df", color: "#6b4e00", border: "#ead99f" },
-    info: { background: "#eef4ff", color: "#254f87", border: "#c8d7ef" },
-  };
-  const colour = colours[type] || colours.check;
+const PAYMENTS = [
+  ["unpaid", "Not yet"],
+  ["deposit_paid", "Deposit paid"],
+  ["paid", "Paid in full"],
+  ["refunded", "Refunded"],
+];
 
-  return {
-    background: colour.background,
-    color: colour.color,
-    border: `1px solid ${colour.border}`,
-    borderRadius: "8px",
-    padding: "10px 12px",
-    margin: "0 0 16px",
-    fontWeight: "700",
-  };
-}
+const PRIORITIES = [
+  ["normal", "Normal"],
+  ["high", "High"],
+  ["urgent", "Urgent"],
+];
 
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
-const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "var(--text-2)" };
-const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "20px" };
-const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" };
-const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
-const fieldStyle = { width: "100%", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const itemCardStyle = { border: "1px solid #e3e3e3", background: "var(--surface-2)", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
-const itemHeadingStyle = { display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", marginBottom: "14px" };
-const secondaryButtonStyle = { padding: "11px 15px", border: "1px solid #aaa", borderRadius: "8px", background: "#fff", fontWeight: "700", cursor: "pointer" };
-const removeButtonStyle = { ...secondaryButtonStyle, color: "#9b2c17", borderColor: "#d3a0a0", padding: "7px 10px" };
-const saveButtonStyle = { width: "100%", padding: "15px", border: 0, borderRadius: "9px", background: "var(--ink)", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer", marginBottom: "20px" };
-const convertButtonStyle = { ...saveButtonStyle, background: "var(--leaf)", marginBottom: 0 };
-const helpStyle = { color: "var(--muted)", fontSize: "13px", marginTop: "6px" };
-const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };
-const successStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "#eefaf0", color: "var(--leaf)", border: "1px solid #b9dfc2", fontWeight: "600" };
-const warningStyle = { padding: "12px 14px", marginBottom: "16px", borderRadius: "8px", background: "#fff8df", color: "#6b4e00", border: "1px solid #ead99f" };
+const METHODS = ["Bank Transfer", "Card", "Cash", "Shopify Payments", "PayPal", "Other"].map((method) => [method, method]);
+
+const pageStyle = ui.page;

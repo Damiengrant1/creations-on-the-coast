@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import ui from "../../lib/ui";
 
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 const LIBBY_CUP_SKU = "LIB-001";
@@ -456,8 +457,8 @@ const pageStyle = { minHeight: "100vh", background: "#f4f4f5", padding: "24px", 
 const headerStyle = { maxWidth: "1500px", margin: "0 auto 18px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "flex-start" };
 const backStyle = { color: "var(--ink)", fontWeight: "700" };
 const settingsStyle = { maxWidth: "1500px", margin: "0 auto 18px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", background: "#fff", padding: "18px", borderRadius: "14px" };
-const labelStyle = { display: "grid", gap: "7px", fontWeight: "700" };
-const inputStyle = { width: "100%", boxSizing: "border-box", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", background: "#fff" };
+const labelStyle = { ...ui.label };
+const inputStyle = { ...ui.field };
 const layoutStyle = { maxWidth: "1500px", margin: "0 auto", display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(330px, 430px)", gap: "18px", alignItems: "start" };
 const categoryRowStyle = { display: "flex", flexWrap: "wrap", gap: "9px", marginBottom: "16px" };
 const categoryStyle = { border: "1px solid #bbb", background: "#fff", borderRadius: "9px", padding: "11px 14px", fontWeight: "700", cursor: "pointer" };

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import ui from "../../lib/ui";
 
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 const when = (value) => (value ? new Date(value).toLocaleString("en-GB", { timeZone: "Europe/London" }) : "—");
@@ -63,7 +64,7 @@ export default function SquarePayoutsPage() {
     <main style={pageStyle}>
       <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
         <Link href="/" style={linkStyle}>← Home</Link>
-        <h1 style={{ fontSize: "36px", margin: "24px 0 8px" }}>Square Payouts</h1>
+        <h1 style={{ fontSize: "30px", margin: "24px 0 8px" }}>Square Payouts</h1>
         <p style={mutedStyle}>Move cleared Square payouts to your bank and record Square processing fees automatically.</p>
 
         {error && <div role="alert" style={{ ...noticeStyle, background: "#fff1f2", color: "#991b1b" }}>{error}</div>}
@@ -133,15 +134,15 @@ export default function SquarePayoutsPage() {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 22px", fontFamily: "var(--font)", color: "var(--ink)" };
-const cardStyle = { background: "#fff", borderRadius: "16px", padding: "26px", marginTop: "22px", boxShadow: "0 4px 18px rgba(0,0,0,.04)" };
-const mutedStyle = { color: "var(--muted)", lineHeight: 1.65 };
-const noticeStyle = { padding: "16px 18px", margin: "18px 0", borderRadius: "10px", lineHeight: 1.6 };
-const buttonStyle = { background: "var(--ink)", color: "#fff", padding: "13px 18px", border: 0, borderRadius: "9px", fontSize: "15px", fontWeight: 700, cursor: "pointer" };
-const secondaryButtonStyle = { ...buttonStyle, background: "#fff", color: "var(--ink)", border: "1px solid #bbb" };
+const pageStyle = { ...ui.page };
+const cardStyle = { ...ui.card, marginTop: "22px" };
+const mutedStyle = { ...ui.help };
+const noticeStyle = { ...ui.info };
+const buttonStyle = { ...ui.primary };
+const secondaryButtonStyle = { ...ui.secondary };
 const buttonRowStyle = { display: "flex", gap: "12px", flexWrap: "wrap" };
 const linkStyle = { color: "var(--ink)", fontWeight: 700 };
 const flowStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px", padding: "18px", borderRadius: "10px", background: "var(--surface-2)", lineHeight: 1.5 };
 const arrowStyle = { fontSize: "24px", fontWeight: 700, color: "var(--muted)" };
 const tableStyle = { width: "100%", borderCollapse: "collapse", minWidth: "860px" };
-const cellStyle = { padding: "14px 10px", textAlign: "left", verticalAlign: "top", borderBottom: "1px solid var(--line)", lineHeight: 1.5 };
+const cellStyle = { ...ui.td };

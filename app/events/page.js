@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -144,14 +145,14 @@ export default function EventsPage() {
     await loadData({ keepMessage: true });
   }
 
-  const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-  const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
+  const fieldStyle = { ...ui.field };
+  const labelStyle = { ...ui.label };
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" }}>
+    <main style={{ ...ui.page }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
-        <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Events</h1>
+        <Link href="/" style={ui.back}>← Home</Link>
+        <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>Events</h1>
         <p style={{ color: "var(--muted)", margin: "0 0 26px" }}>Create events and track their sales, costs, expenses and profit.</p>
 
         {message && <div style={{ padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)", color: messageType === "error" ? "#9b2c17" : "var(--leaf)", border: `1px solid ${messageType === "error" ? "#f1c1c1" : "#bfe2c8"}`, fontWeight: "600" }}>{message}</div>}
@@ -163,7 +164,7 @@ export default function EventsPage() {
           <SummaryCard title="Event Net Profit" value={money(totals.profit)} featured />
         </div>
 
-        <form onSubmit={saveEvent} style={{ background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "24px" }}>
+        <form onSubmit={saveEvent} style={{ ...ui.card, marginBottom: "24px" }}>
           <h2 style={{ marginTop: 0 }}>Add Event</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "18px" }}>
             <Field label="Event Name" labelStyle={labelStyle}><input value={eventName} onChange={(e) => setEventName(e.target.value)} style={fieldStyle} required /></Field>
@@ -174,7 +175,7 @@ export default function EventsPage() {
             <Field label="Event Series" labelStyle={labelStyle}><select value={seriesId} onChange={(e) => setSeriesId(e.target.value)} style={fieldStyle}><option value="">No series</option>{series.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
           </div>
           <Field label="Notes" labelStyle={labelStyle}><textarea rows="3" value={notes} onChange={(e) => setNotes(e.target.value)} style={fieldStyle} /></Field>
-          <button type="submit" disabled={saving} style={{ width: "100%", padding: "15px", marginTop: "20px", border: "none", borderRadius: "9px", background: saving ? "var(--muted)" : "var(--ink)", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Creating Event..." : "Create Event"}</button>
+          <button type="submit" disabled={saving} style={{ width: "100%", padding: "15px", marginTop: "20px", border: "none", borderRadius: "9px", background: saving ? "var(--muted)" : "var(--sea)", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Creating Event..." : "Create Event"}</button>
         </form>
 
         {loading ? <div style={cardStyle}>Loading events...</div> : events.length === 0 ? <div style={cardStyle}>No events created yet.</div> : (
@@ -203,7 +204,7 @@ export default function EventsPage() {
   );
 }
 
-const cardStyle = { background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "var(--shadow)" };
+const cardStyle = { ...ui.card };
 function Field({ label, labelStyle, children }) { return <div><label style={labelStyle}>{label}</label>{children}</div>; }
 function SummaryCard({ title, value, featured }) { return <div style={{ ...cardStyle, background: featured ? "var(--ink)" : "#fff", color: featured ? "#fff" : "var(--ink)" }}><div style={{ color: featured ? "var(--line-strong)" : "var(--muted)", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div></div>; }
 function Figure({ label, value, strong }) { return <div style={{ padding: "14px", background: strong ? "var(--leaf-soft)" : "var(--sand)", borderRadius: "9px" }}><div style={{ color: "var(--muted)", fontSize: "13px", marginBottom: "6px" }}>{label}</div><strong style={{ fontSize: "19px", color: strong ? "var(--leaf)" : "var(--ink)" }}>{value}</strong></div>; }

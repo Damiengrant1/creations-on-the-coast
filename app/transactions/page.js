@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -257,8 +258,8 @@ export default function TransactionsPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
-        <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Manage Transactions</h1>
+        <Link href="/" style={ui.back}>← Home</Link>
+        <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>Manage Transactions</h1>
         <p style={{ color: "var(--muted)", margin: "0 0 18px" }}>Review entries, edit expenses and transfers, and safely remove mistakes or test data.</p>
 
         <div style={noticeStyle}><strong>Important:</strong> Use these controls rather than deleting database rows manually. Linked cash, stock and fee records are handled together.</div>
@@ -347,14 +348,14 @@ function RecordDetails({ type, record, accountNames, total }) {
 function Title({ children }) { return <h2 style={{ fontSize: "19px", margin: "0 0 8px" }}>{children}</h2>; }
 function Meta({ children }) { return <div style={{ color: "var(--muted)", fontSize: "14px", marginTop: "5px" }}>{children}</div>; }
 
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
-const panelStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
-const noticeStyle = { padding: "14px 16px", marginBottom: "18px", borderRadius: "9px", background: "#fff8e5", border: "1px solid #ead59a", color: "#6d5310" };
-const alertStyle = { padding: "14px 16px", marginBottom: "18px", border: "1px solid", fontWeight: "600" };
-const fieldStyle = { width: "100%", padding: "11px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "15px", boxSizing: "border-box", background: "#fff" };
-const formGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "15px" };
-const editButtonStyle = { border: "1px solid var(--ink)", borderRadius: "8px", background: "#fff", color: "var(--ink)", padding: "11px 15px", fontWeight: "700", cursor: "pointer" };
-const deleteButtonStyle = { border: "none", borderRadius: "8px", background: "#a61b1b", color: "#fff", padding: "11px 15px", fontWeight: "700", cursor: "pointer" };
-const cancelButtonStyle = { border: "1px solid #aaa", borderRadius: "8px", background: "#fff", color: "var(--ink)", padding: "10px 14px", fontWeight: "700", cursor: "pointer" };
-const saveButtonStyle = { marginTop: "18px", width: "100%", border: "none", borderRadius: "8px", background: "var(--ink)", color: "#fff", padding: "14px", fontSize: "16px", fontWeight: "700", cursor: "pointer" };
+const pageStyle = { ...ui.page };
+const panelStyle = { ...ui.card };
+const noticeStyle = { ...ui.info };
+const alertStyle = { ...ui.notice };
+const fieldStyle = { ...ui.field };
+const formGridStyle = { ...ui.grid, gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))" };
+const editButtonStyle = { ...ui.secondary };
+const deleteButtonStyle = { ...ui.danger };
+const cancelButtonStyle = { ...ui.secondary };
+const saveButtonStyle = { ...ui.primary, width: "100%", marginTop: "18px" };
 function tabStyle(active) { return { border: active ? "1px solid var(--ink)" : "1px solid var(--line-strong)", borderRadius: "8px", background: active ? "var(--ink)" : "#fff", color: active ? "#fff" : "var(--ink)", padding: "11px 14px", fontWeight: "700", cursor: "pointer" }; }

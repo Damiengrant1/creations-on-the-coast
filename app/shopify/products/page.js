@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../../lib/supabase";
+import ui from "../../../lib/ui";
 
 const SHOP_DOMAIN = "ku1cvy-ue.myshopify.com";
 const money = value => `£${Number(value || 0).toFixed(2)}`;
@@ -127,7 +128,7 @@ export default function ShopifyProductMatchingPage() {
     <main style={pageStyle}>
       <div style={{ maxWidth: "1350px", margin: "0 auto" }}>
         <Link href="/shopify" onClick={leavePage} style={{ color: "var(--text-2)", fontWeight: 700 }}>← Back to Shopify</Link>
-        <h1 style={{ fontSize: "34px", margin: "24px 0 10px" }}>Shopify product matching</h1>
+        <h1 style={{ fontSize: "30px", margin: "24px 0 10px" }}>Shopify product matching</h1>
         <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: "24px" }}>
           Choose the blank stock item used for each website variant. Different designs can share the same stock item.
           Sales will use the amount actually charged on Shopify and the linked item&apos;s stock and production costs.
@@ -201,9 +202,9 @@ export default function ShopifyProductMatchingPage() {
 }
 
 function Summary({ title, value }) { return <div style={cardStyle}><div style={{ color: "var(--muted)", marginBottom: "8px" }}>{title}</div><strong style={{ fontSize: "28px" }}>{value}</strong></div>; }
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "50px 20px", color: "var(--ink)", fontFamily: "var(--font)" };
-const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
-const inputStyle = { display: "block", width: "100%", boxSizing: "border-box", marginTop: "7px", border: "1px solid var(--line-strong)", borderRadius: "8px", padding: "11px", fontSize: "14px", background: "#fff", color: "var(--ink)" };
-const cellStyle = { padding: "14px 10px", borderBottom: "1px solid #e5e5e5", verticalAlign: "top", lineHeight: 1.5 };
-const buttonStyle = { padding: "13px 18px", border: 0, borderRadius: "8px", color: "#fff", background: "var(--ink)", fontWeight: 700, cursor: "pointer" };
-const noticeStyle = { borderRadius: "9px", marginBottom: "18px", padding: "15px", lineHeight: 1.5 };
+const pageStyle = { ...ui.page };
+const cardStyle = { ...ui.card };
+const inputStyle = { ...ui.field };
+const cellStyle = { ...ui.td };
+const buttonStyle = { ...ui.primary };
+const noticeStyle = { ...ui.info };

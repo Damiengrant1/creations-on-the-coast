@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -236,10 +237,10 @@ export default function ReportsPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
+        <Link href="/" style={ui.back}>← Home</Link>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "24px" }}>
           <div>
-            <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Reports & Profitability</h1>
+            <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>Reports & Profitability</h1>
             <p style={{ color: "var(--muted)", margin: 0 }}>Review business performance for any date range.</p>
           </div>
           <button type="button" onClick={exportCsv} disabled={loading || !!error} style={buttonStyle}>Download CSV</button>
@@ -321,12 +322,12 @@ function ReportTable({ title, subtitle, empty, headings, children }) {
 }
 function Td({ children, strong }) { return <td style={{ padding: "13px 15px", fontSize: "14px", whiteSpace: "nowrap", fontWeight: strong ? "700" : "400" }}>{children}</td>; }
 
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
-const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
-const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const buttonStyle = { padding: "12px 17px", border: "none", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontWeight: "700", cursor: "pointer" };
+const pageStyle = { ...ui.page };
+const cardStyle = { ...ui.card };
+const fieldStyle = { ...ui.field };
+const buttonStyle = { ...ui.primary };
 const summaryGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "15px", marginBottom: "22px" };
 const twoColumnStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: "22px" };
-const thStyle = { padding: "13px 15px", fontSize: "13px", whiteSpace: "nowrap" };
+const thStyle = { ...ui.th };
 const rowStyle = { borderTop: "1px solid var(--line)" };
-const errorStyle = { padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };
+const errorStyle = { ...ui.error };

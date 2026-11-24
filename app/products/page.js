@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { useAccess } from "../AuthGate";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -140,12 +141,7 @@ export default function ProductsPage() {
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--sand)",
-        padding: "40px 20px",
-        fontFamily: "var(--font)",
-      }}
+      style={{ ...ui.page }}
     >
       <div
         style={{
@@ -155,11 +151,7 @@ export default function ProductsPage() {
       >
         <Link
           href="/"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            color: "var(--text-2)",
-          }}
+          style={ui.back}
         >
           ← Home
         </Link>
@@ -176,11 +168,7 @@ export default function ProductsPage() {
         >
           <div>
             <h1
-              style={{
-                fontSize: "36px",
-                margin: 0,
-                marginBottom: "8px",
-              }}
+              style={{ fontSize: "30px", margin: 0, marginBottom: "8px" }}
             >
               Products & Stock
             </h1>
@@ -248,13 +236,7 @@ export default function ProductsPage() {
         </div>
 
         <div
-          style={{
-            background: "#fff",
-            padding: "18px",
-            borderRadius: "12px",
-            boxShadow: "var(--shadow)",
-            marginBottom: "16px",
-          }}
+          style={{ ...ui.card, marginBottom: "16px" }}
         >
           <label
             htmlFor="product-search"
@@ -328,12 +310,7 @@ export default function ProductsPage() {
         </div>
 
         <div
-          style={{
-            background: "#fff",
-            borderRadius: "14px",
-            boxShadow: "var(--shadow)",
-            overflowX: "auto",
-          }}
+          style={{ ...ui.card, overflowX: "auto" }}
         >
           {loading ? (
             <div style={{ padding: "28px" }}>
@@ -560,12 +537,7 @@ export default function ProductsPage() {
 function SummaryCard({ title, value }) {
   return (
     <div
-      style={{
-        background: "#fff",
-        padding: "22px",
-        borderRadius: "12px",
-        boxShadow: "var(--shadow)",
-      }}
+      style={{ ...ui.card }}
     >
       <div
         style={{

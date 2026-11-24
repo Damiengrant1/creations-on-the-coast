@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import ui from "../../lib/ui";
 
 const permissionNames = {
   read_orders: "Website orders",
@@ -56,7 +57,7 @@ export default function ShopifyPage() {
         <Link href="/" style={{ color: "var(--text-2)", textDecoration: "none", fontWeight: 700 }}>
           ← Home
         </Link>
-        <h1 style={{ fontSize: "36px", margin: "24px 0 8px" }}>Shopify</h1>
+        <h1 style={{ fontSize: "30px", margin: "24px 0 8px" }}>Shopify</h1>
         <p style={{ color: "var(--muted)", margin: "0 0 28px", lineHeight: 1.6 }}>
           Connect website orders and Shopify Payments to Creations on the Coast.
         </p>
@@ -138,7 +139,7 @@ function Detail({ title, value }) {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "50px 20px", fontFamily: "var(--font)", color: "var(--ink)" };
-const cardStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)" };
-const buttonStyle = { border: 0, borderRadius: "9px", padding: "14px 22px", background: "var(--ink)", color: "#fff", fontWeight: 700, fontSize: "16px" };
-const noticeStyle = { marginTop: "24px", padding: "16px", borderRadius: "9px", border: "1px solid", lineHeight: 1.6 };
+const pageStyle = { ...ui.page };
+const cardStyle = { ...ui.card };
+const buttonStyle = { ...ui.primary };
+const noticeStyle = { ...ui.info };

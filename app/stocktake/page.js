@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -231,39 +232,22 @@ export default function StocktakePage() {
     await loadProducts({ keepMessage: true });
   }
 
-  const fieldStyle = {
-    width: "100%",
-    padding: "11px",
-    border: "1px solid #d8d8d8",
-    borderRadius: "8px",
-    fontSize: "15px",
-    boxSizing: "border-box",
-    background: "#fff",
-  };
+  const fieldStyle = { ...ui.field };
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--sand)",
-        padding: "40px 20px",
-        fontFamily: "var(--font)",
-      }}
+      style={{ ...ui.page }}
     >
       <div style={{ maxWidth: "1250px", margin: "0 auto" }}>
         <Link
           href="/"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            color: "var(--text-2)",
-          }}
+          style={ui.back}
         >
           ← Home
         </Link>
 
         <div style={{ marginBottom: "24px" }}>
-          <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
+          <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>
             Stocktake / Stock Adjustments
           </h1>
           <p style={{ color: "var(--muted)", margin: 0 }}>
@@ -274,13 +258,7 @@ export default function StocktakePage() {
 
         <form onSubmit={saveAdjustments}>
           <div
-            style={{
-              background: "#fff",
-              padding: "22px",
-              borderRadius: "14px",
-              boxShadow: "var(--shadow)",
-              marginBottom: "20px",
-            }}
+            style={{ ...ui.card, marginBottom: "20px" }}
           >
             <div
               style={{
@@ -369,12 +347,7 @@ export default function StocktakePage() {
           )}
 
           <div
-            style={{
-              background: "#fff",
-              borderRadius: "14px",
-              boxShadow: "var(--shadow)",
-              overflowX: "auto",
-            }}
+            style={{ ...ui.card, overflowX: "auto" }}
           >
             {loading ? (
               <div style={{ padding: "28px" }}>Loading stock...</div>
@@ -481,20 +454,7 @@ export default function StocktakePage() {
           </div>
 
           <div
-            style={{
-              position: "sticky",
-              bottom: "16px",
-              marginTop: "20px",
-              background: "#fff",
-              padding: "18px",
-              borderRadius: "12px",
-              boxShadow: "0 5px 22px rgba(0,0,0,0.14)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "16px",
-              flexWrap: "wrap",
-            }}
+            style={{ ...ui.card, position: "sticky", bottom: "16px", marginTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}
           >
             <div>
               <strong>{enteredRows.length}</strong>{" "}
@@ -512,7 +472,7 @@ export default function StocktakePage() {
                 border: "none",
                 borderRadius: "9px",
                 padding: "14px 20px",
-                background: saving || loading ? "var(--muted)" : "var(--ink)",
+                background: saving || loading ? "var(--muted)" : "var(--sea)",
                 color: "#fff",
                 fontWeight: "700",
                 fontSize: "16px",

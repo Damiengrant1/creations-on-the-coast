@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import ui from "../../../lib/ui";
+import { Choice, Field, FormSection, PageHeader, StickyActions } from "../../FormParts";
 
 const STATUSES = [
   ["new", "New"],
@@ -165,7 +167,7 @@ export default function AddJobPage() {
     if (!item.productId) {
       return {
         type: "check",
-        text: "Select a catalogue product to check its stock.",
+        text: "Custom item, so stock can't be checked.",
       };
     }
 
@@ -176,7 +178,7 @@ export default function AddJobPage() {
     }
 
     if (!product.track_stock) {
-      return { type: "info", text: "Stock is not tracked for this product." };
+      return { type: "info", text: "Stock isn't counted for this product." };
     }
 
     const requiredQuantity = items
@@ -189,13 +191,13 @@ export default function AddJobPage() {
     if (availableQuantity >= requiredQuantity) {
       return {
         type: "yes",
-        text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}.`,
+        text: `Enough stock: ${availableQuantity} free (${physicalQuantity} on the shelf, ${reservedQuantity} kept for other jobs). This job needs ${requiredQuantity}.`,
       };
     }
 
     return {
       type: "no",
-      text: `Physical stock: ${physicalQuantity}. Reserved for other active jobs: ${reservedQuantity}. Available for this job: ${availableQuantity}. This job needs: ${requiredQuantity}. You need to order ${requiredQuantity - availableQuantity}.`,
+      text: `Order ${requiredQuantity - availableQuantity} more: only ${availableQuantity} free (${physicalQuantity} on the shelf, ${reservedQuantity} kept for other jobs). This job needs ${requiredQuantity}.`,
     };
   }
 
@@ -292,199 +294,165 @@ export default function AddJobPage() {
     router.refresh();
   }
 
+  const stockTone = { yes: "✓", no: "⚠", check: "•", info: "i" };
+
   return (
-    <main style={pageStyle}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <Link href="/jobs" style={backLinkStyle}>
-          ← Back to Jobs
-        </Link>
+    <main className="form-page">
+      <PageHeader back="/jobs" backLabel="Jobs" title="New job" intro="Take down an order from Facebook, WhatsApp, the website or in person." />
 
-        <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
-          Add New Job
-        </h1>
-        <p style={{ color: "var(--muted)", margin: "0 0 28px" }}>
-          Record a new website, social media or in-person order.
-        </p>
+      <form onSubmit={handleSubmit}>
+        <FormSection step="1" title="Who's it for?">
+          <div className="form-grid">
+            <Field label="Customer name" wide>
+              <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={ui.field} placeholder="Person or business name" required autoFocus />
+            </Field>
+            <Field label="Phone" optional>
+              <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={ui.field} inputMode="tel" />
+            </Field>
+            <Field label="Email" optional>
+              <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} style={ui.field} />
+            </Field>
+            <Field label="Where did the order come from?" wide>
+              <Choice name="Order source" value={source} onChange={setSource} options={SOURCES} />
+            </Field>
+          </div>
+        </FormSection>
 
-        <form onSubmit={handleSubmit}>
-          <Section title="Customer & Job Details">
-            <div style={gridStyle}>
-              <Field label="Date Received">
-                <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} style={fieldStyle} required />
-              </Field>
-              <Field label="Customer Name">
-                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={fieldStyle} placeholder="Customer or business name" required />
-              </Field>
-              <Field label="Phone">
-                <input type="tel" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Email">
-                <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Order Source">
-                <select value={source} onChange={(e) => setSource(e.target.value)} style={fieldStyle}>
-                  <option value="in_person">In Person</option>
-                  <option value="facebook">Facebook</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="website">Website</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Due Date">
-                <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={fieldStyle} />
-              </Field>
-              <Field label="Priority">
-                <select value={priority} onChange={(e) => setPriority(e.target.value)} style={fieldStyle}>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </Field>
-              <Field label="Current Status">
-                <select value={status} onChange={(e) => setStatus(e.target.value)} style={fieldStyle}>
-                  {STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-              </Field>
-              <Field label="Collection / Delivery">
-                <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} style={fieldStyle}>
-                  <option value="">Not decided</option>
-                  <option value="collection">Collection</option>
-                  <option value="postage">Postage</option>
-                  <option value="delivery">Local Delivery</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Payment Status">
-                <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)} style={fieldStyle}>
-                  <option value="unpaid">Unpaid</option>
-                  <option value="deposit_paid">Deposit Paid</option>
-                  <option value="paid">Paid</option>
-                  <option value="refunded">Refunded</option>
-                </select>
-              </Field>
-            </div>
-          </Section>
-
-          <Section title="Items Required">
-            {items.map((item, index) => {
-              const stockStatus = getItemStockStatus(item);
-
-              return (
-              <div key={index} style={itemCardStyle}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", marginBottom: "14px" }}>
+        <FormSection step="2" title="What do they want?" hint="Pick a product to check stock and fill in the price, or type a custom item.">
+          {items.map((item, index) => {
+            const stockStatus = getItemStockStatus(item);
+            return (
+              <div key={index} className="item-card">
+                <div className="item-card-head">
                   <strong>Item {index + 1}</strong>
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(index)} style={removeButtonStyle}>Remove</button>
+                    <button type="button" onClick={() => removeItem(index)} style={ui.danger}>Remove</button>
                   )}
                 </div>
 
-                <div style={gridStyle}>
-                  <Field label="Select Existing Product (optional)">
-                    <select value={item.productId} onChange={(e) => selectProduct(index, e.target.value)} style={fieldStyle}>
-                      <option value="">Manual / custom item</option>
+                <div className="form-grid">
+                  <Field label="Product" wide>
+                    <select value={item.productId} onChange={(e) => selectProduct(index, e.target.value)} style={ui.field}>
+                      <option value="">Custom item (not in the product list)</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>{productLabel(product)}</option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="Item Description">
-                    <input type="text" value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} style={fieldStyle} placeholder="e.g. 10 black workwear T-shirts" required />
+                  <Field label="Description" wide>
+                    <input type="text" value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)} style={ui.field} placeholder="e.g. Black hoodie, white logo on back" required />
                   </Field>
                   <Field label="Quantity">
-                    <input type="number" min="1" step="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} style={fieldStyle} required />
+                    <input type="number" min="1" step="1" inputMode="numeric" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} style={ui.field} required />
                   </Field>
-                  <Field label="Price Each (optional)">
-                    <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} style={fieldStyle} />
+                  <Field label="Price each (£)" optional>
+                    <input type="number" min="0" step="0.01" inputMode="decimal" value={item.unitPrice} onChange={(e) => updateItem(index, "unitPrice", e.target.value)} style={ui.field} />
+                  </Field>
+                  <Field label="Personalisation / instructions" optional wide>
+                    <textarea value={item.personalisation} onChange={(e) => updateItem(index, "personalisation", e.target.value)} style={{ ...ui.field, minHeight: "76px", resize: "vertical" }} placeholder="Names, sizes, colours, wording or design details" />
                   </Field>
                 </div>
 
-                <div style={stockMessageStyle(stockStatus.type)}>
-                  {stockStatus.text}
+                <div className={`stock-line ${stockStatus.type}`}>
+                  {stockTone[stockStatus.type]} {stockStatus.text}
                 </div>
-
-                <Field label="Personalisation / Item Instructions">
-                  <textarea value={item.personalisation} onChange={(e) => updateItem(index, "personalisation", e.target.value)} style={{ ...fieldStyle, minHeight: "80px", resize: "vertical" }} placeholder="Names, sizes, colours, wording or design details" />
-                </Field>
               </div>
-              );
-            })}
+            );
+          })}
 
-            <button type="button" onClick={addItem} style={secondaryButtonStyle}>+ Add Another Item</button>
-          </Section>
+          <button type="button" onClick={addItem} style={ui.secondary}>+ Add another item</button>
+        </FormSection>
 
-          <Section title="Value & Notes">
-            <div style={gridStyle}>
-              <Field label="Job Value">
-                <input type="number" min="0" step="0.01" value={quotedTotal} onChange={(e) => setQuotedTotal(e.target.value)} style={fieldStyle} placeholder={calculatedTotal > 0 ? calculatedTotal.toFixed(2) : "Optional"} />
-                <div style={helpTextStyle}>Item total: £{calculatedTotal.toFixed(2)}. Leave blank to use this total.</div>
+        <FormSection step="3" title="When and how much?">
+          <div className="form-grid">
+            <Field label="Due date" optional>
+              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={ui.field} />
+            </Field>
+            <Field label="Job value (£)" hint={`Items add up to £${calculatedTotal.toFixed(2)}. Leave blank to use that.`} optional>
+              <input type="number" min="0" step="0.01" inputMode="decimal" value={quotedTotal} onChange={(e) => setQuotedTotal(e.target.value)} style={ui.field} placeholder={calculatedTotal > 0 ? calculatedTotal.toFixed(2) : ""} />
+            </Field>
+            <Field label="Collection or delivery?" wide>
+              <Choice name="Collection or delivery" value={deliveryMethod} onChange={setDeliveryMethod} options={DELIVERY} />
+            </Field>
+            <Field label="Has the customer paid?" wide hint="When they pay in full, open the job and use Take payment so it counts as a sale.">
+              <Choice name="Payment" value={paymentStatus} onChange={setPaymentStatus} options={PAYMENTS} />
+            </Field>
+          </div>
+        </FormSection>
+
+        <FormSection step="4" title="Artwork and notes">
+          <div className="form-grid">
+            <Field label="Artwork / information" optional wide>
+              <textarea value={artworkDetails} onChange={(e) => setArtworkDetails(e.target.value)} style={{ ...ui.field, minHeight: "90px", resize: "vertical" }} placeholder="Logo received? Artwork to design? Approval sent?" />
+            </Field>
+            <Field label="Other notes" optional wide>
+              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...ui.field, minHeight: "80px", resize: "vertical" }} />
+            </Field>
+          </div>
+        </FormSection>
+
+        <details className="more-details">
+          <summary>More details (date received, priority, starting stage)</summary>
+          <div className="form-section">
+            <div className="form-grid">
+              <Field label="Date received">
+                <input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} style={ui.field} required />
               </Field>
-              <Field label="Artwork / Information">
-                <textarea value={artworkDetails} onChange={(e) => setArtworkDetails(e.target.value)} style={{ ...fieldStyle, minHeight: "100px", resize: "vertical" }} placeholder="Logos received, artwork required, approval details..." />
+              <Field label="Starting stage">
+                <select value={status} onChange={(e) => setStatus(e.target.value)} style={ui.field}>
+                  {STATUSES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </Field>
+              <Field label="Priority" wide>
+                <Choice name="Priority" value={priority} onChange={setPriority} options={PRIORITIES} />
               </Field>
             </div>
-            <Field label="General Notes">
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ ...fieldStyle, minHeight: "100px", resize: "vertical" }} />
-            </Field>
-          </Section>
+          </div>
+        </details>
 
-          {message && <div style={errorStyle}>{message}</div>}
+        {message && <div style={ui.error}>{message}</div>}
 
-          <button type="submit" disabled={saving} style={{ ...primaryButtonStyle, opacity: saving ? 0.6 : 1 }}>
-            {saving ? "Saving Job..." : "Save Job"}
+        <StickyActions
+          summary={
+            <>
+              {items.length} item{items.length === 1 ? "" : "s"} · <strong>£{(quotedTotal !== "" ? Number(quotedTotal) : calculatedTotal).toFixed(2)}</strong>
+            </>
+          }
+        >
+          <Link href="/jobs" style={ui.secondary}>Cancel</Link>
+          <button type="submit" disabled={saving} style={ui.primary}>
+            {saving ? "Saving…" : "Save job"}
           </button>
-        </form>
-      </div>
+        </StickyActions>
+      </form>
     </main>
   );
 }
 
-function Section({ title, children }) {
-  return (
-    <div style={sectionStyle}>
-      <h2 style={{ margin: "0 0 20px" }}>{title}</h2>
-      {children}
-    </div>
-  );
-}
+const SOURCES = [
+  ["in_person", "In person"],
+  ["facebook", "Facebook"],
+  ["whatsapp", "WhatsApp"],
+  ["website", "Website"],
+  ["other", "Other"],
+];
 
-function Field({ label, children }) {
-  return (
-    <div style={{ marginBottom: "16px" }}>
-      <label style={labelStyle}>{label}</label>
-      {children}
-    </div>
-  );
-}
+const DELIVERY = [
+  ["", "Not decided"],
+  ["collection", "Collection"],
+  ["postage", "Post"],
+  ["delivery", "Local delivery"],
+  ["other", "Other"],
+];
 
-function stockMessageStyle(type) {
-  const colours = {
-    yes: { background: "#e8f7ed", color: "var(--leaf)", border: "#b8dfc3" },
-    no: { background: "var(--coral-soft)", color: "#9b2c17", border: "#efb3b3" },
-    check: { background: "#fff8df", color: "#6b4e00", border: "#ead99f" },
-    info: { background: "#eef4ff", color: "#254f87", border: "#c8d7ef" },
-  };
-  const colour = colours[type] || colours.check;
+const PAYMENTS = [
+  ["unpaid", "Not yet"],
+  ["deposit_paid", "Deposit paid"],
+  ["paid", "Paid in full"],
+];
 
-  return {
-    background: colour.background,
-    color: colour.color,
-    border: `1px solid ${colour.border}`,
-    borderRadius: "8px",
-    padding: "10px 12px",
-    margin: "0 0 16px",
-    fontWeight: "700",
-  };
-}
-
-const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
-const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "var(--text-2)" };
-const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "20px" };
-const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" };
-const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
-const fieldStyle = { width: "100%", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const itemCardStyle = { border: "1px solid #e3e3e3", background: "var(--surface-2)", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
-const primaryButtonStyle = { width: "100%", padding: "15px 20px", border: 0, borderRadius: "9px", background: "var(--ink)", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer" };
-const secondaryButtonStyle = { padding: "11px 15px", border: "1px solid #aaa", borderRadius: "8px", background: "#fff", fontWeight: "700", cursor: "pointer" };
-const removeButtonStyle = { padding: "7px 10px", border: "1px solid #d3a0a0", borderRadius: "7px", background: "#fff", color: "#9b2c17", fontWeight: "600", cursor: "pointer" };
-const helpTextStyle = { color: "var(--muted)", fontSize: "13px", marginTop: "6px" };
-const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };
+const PRIORITIES = [
+  ["normal", "Normal"],
+  ["high", "High"],
+  ["urgent", "Urgent"],
+];

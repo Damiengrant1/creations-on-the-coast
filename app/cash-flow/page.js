@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -352,51 +353,25 @@ export default function CashFlowPage() {
     await loadData({ keepMessage: true });
   }
 
-  const fieldStyle = {
-    width: "100%",
-    padding: "12px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-    background: "#fff",
-  };
+  const fieldStyle = { ...ui.field };
 
-  const labelStyle = {
-    display: "block",
-    fontWeight: "600",
-    marginBottom: "6px",
-  };
+  const labelStyle = { ...ui.label };
 
-  const buttonStyle = {
-    padding: "12px 16px",
-    borderRadius: "8px",
-    fontWeight: "700",
-    cursor: "pointer",
-  };
+  const buttonStyle = { ...ui.primary };
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--sand)",
-        padding: "40px 20px",
-        fontFamily: "var(--font)",
-      }}
+      style={{ ...ui.page }}
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <Link
           href="/"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            color: "var(--text-2)",
-          }}
+          style={ui.back}
         >
           ← Home
         </Link>
 
-        <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
+        <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>
           Cash Flow & Accounts
         </h1>
         <p style={{ color: "var(--muted)", margin: "0 0 28px" }}>
@@ -494,13 +469,7 @@ export default function CashFlowPage() {
             </div>
 
             <div
-              style={{
-                background: "#fff",
-                padding: "28px",
-                borderRadius: "14px",
-                boxShadow: "var(--shadow)",
-                marginBottom: "24px",
-              }}
+              style={{ ...ui.card, marginBottom: "24px" }}
             >
               {activeForm === "transfer" && (
                 <form onSubmit={saveTransfer}>
@@ -773,12 +742,7 @@ export default function CashFlowPage() {
             </div>
 
             <div
-              style={{
-                background: "#fff",
-                borderRadius: "14px",
-                boxShadow: "var(--shadow)",
-                overflowX: "auto",
-              }}
+              style={{ ...ui.card, overflowX: "auto" }}
             >
               <div style={{ padding: "24px 26px" }}>
                 <h2 style={{ margin: "0 0 5px" }}>
@@ -891,12 +855,7 @@ export default function CashFlowPage() {
   );
 }
 
-const formGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-  gap: "16px",
-  marginBottom: "18px",
-};
+const formGridStyle = { ...ui.grid, marginBottom: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))" };
 
 function BalanceCard({ title, type, balance, featured = false }) {
   return (
@@ -991,7 +950,7 @@ function SubmitButton({ saving, children }) {
         padding: "15px",
         border: "none",
         borderRadius: "9px",
-        background: saving ? "var(--muted)" : "var(--ink)",
+        background: saving ? "var(--muted)" : "var(--sea)",
         color: "#fff",
         fontSize: "16px",
         fontWeight: "700",

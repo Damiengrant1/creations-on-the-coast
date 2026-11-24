@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+import ui from "../../../../lib/ui";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -92,21 +93,9 @@ export default function EditProductPage() {
   const totalDirectCost =
     Number(stockCost || 0) + Number(productionCost || 0);
 
-  const fieldStyle = {
-    width: "100%",
-    padding: "12px",
-    border: "1px solid #ddd",
-    borderRadius: "8px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-    background: "#fff",
-  };
+  const fieldStyle = { ...ui.field };
 
-  const labelStyle = {
-    display: "block",
-    fontWeight: "600",
-    marginBottom: "6px",
-  };
+  const labelStyle = { ...ui.label };
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -185,12 +174,7 @@ export default function EditProductPage() {
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--sand)",
-        padding: "40px 20px",
-        fontFamily: "var(--font)",
-      }}
+      style={{ ...ui.page }}
     >
       <div
         style={{
@@ -200,20 +184,13 @@ export default function EditProductPage() {
       >
         <Link
           href="/products"
-          style={{
-            display: "inline-block",
-            marginBottom: "24px",
-            color: "var(--text-2)",
-          }}
+          style={ui.back}
         >
           ← Back to Products
         </Link>
 
         <h1
-          style={{
-            fontSize: "36px",
-            marginBottom: "8px",
-          }}
+          style={{ fontSize: "30px", marginBottom: "8px" }}
         >
           Edit Product
         </h1>
@@ -229,12 +206,7 @@ export default function EditProductPage() {
 
         <form
           onSubmit={handleSubmit}
-          style={{
-            background: "#fff",
-            padding: "28px",
-            borderRadius: "14px",
-            boxShadow: "var(--shadow)",
-          }}
+          style={{ ...ui.card }}
         >
           <div style={{ marginBottom: "20px" }}>
             <label style={labelStyle}>Product Name</label>
@@ -504,19 +476,7 @@ export default function EditProductPage() {
           <button
             type="submit"
             disabled={saving}
-            style={{
-              width: "100%",
-              padding: "15px",
-              borderRadius: "9px",
-              border: "none",
-              background: "var(--ink)",
-              color: "#fff",
-              fontWeight: "700",
-              fontSize: "16px",
-              cursor: saving
-                ? "not-allowed"
-                : "pointer",
-            }}
+            style={{ ...ui.primary, width: "100%" }}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

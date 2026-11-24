@@ -43,12 +43,14 @@ export default function JobsPage() {
   const [view, setView] = useState("board");
   const [showClosed, setShowClosed] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
+  const [created, setCreated] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const filter = params.get("filter");
     if (["overdue", "week", "payment"].includes(filter)) setQuickFilter(filter);
     if (filter === "payment") setShowClosed(true);
+    if (params.get("created")) setCreated(params.get("created"));
     const stage = params.get("stage");
     if (BOARD_COLUMNS.some((column) => column.key === stage)) setStageFilter(stage);
     try {
@@ -297,6 +299,7 @@ export default function JobsPage() {
         </div>
       )}
 
+      {created && <div className="notice good">Job #{created} saved. It's on the board under “To sort”.</div>}
       {message && <div className="notice error">{message}</div>}
 
       {loading ? (

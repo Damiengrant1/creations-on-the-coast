@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase";
+import ui from "../../../lib/ui";
 
 const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
 
@@ -229,7 +230,7 @@ export default function StockOrderPage() {
 
         <div style={headingStyle}>
           <div>
-            <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
+            <h1 style={{ fontSize: "30px", margin: "0 0 8px" }}>
               Stock Order Form
             </h1>
             <p style={{ color: "var(--muted)", margin: 0 }}>
@@ -434,17 +435,8 @@ function Td({ children }) {
   );
 }
 
-const pageStyle = {
-  minHeight: "100vh",
-  background: "var(--sand)",
-  padding: "40px 20px",
-  fontFamily: "var(--font)",
-};
-const backLinkStyle = {
-  display: "inline-block",
-  marginBottom: "24px",
-  color: "var(--text-2)",
-};
+const pageStyle = { ...ui.page };
+const backLinkStyle = { ...ui.back };
 const headingStyle = {
   display: "flex",
   justifyContent: "space-between",
@@ -453,72 +445,25 @@ const headingStyle = {
   gap: "16px",
   marginBottom: "24px",
 };
-const panelStyle = {
-  background: "#fff",
-  padding: "26px",
-  borderRadius: "14px",
-  boxShadow: "var(--shadow)",
-};
-const detailsGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "16px",
-  marginBottom: "18px",
-};
-const labelStyle = {
-  display: "block",
-  fontWeight: "600",
-  marginBottom: "6px",
-};
-const fieldStyle = {
-  width: "100%",
-  padding: "11px 12px",
-  border: "1px solid var(--line-strong)",
-  borderRadius: "8px",
-  fontSize: "15px",
-  boxSizing: "border-box",
-  background: "#fff",
-};
-const primaryButtonStyle = {
-  border: 0,
-  borderRadius: "8px",
-  background: "var(--ink)",
-  color: "#fff",
-  padding: "12px 15px",
-  fontWeight: "700",
-  cursor: "pointer",
-};
-const secondaryButtonStyle = {
-  ...primaryButtonStyle,
-  border: "1px solid #aaa",
-  background: "#fff",
-  color: "var(--ink)",
-};
+const panelStyle = { ...ui.card };
+const detailsGridStyle = { ...ui.grid, marginBottom: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" };
+const labelStyle = { ...ui.label };
+const fieldStyle = { ...ui.field };
+const primaryButtonStyle = { ...ui.primary };
+const secondaryButtonStyle = { ...ui.secondary };
 const summaryGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
   gap: "12px",
   marginBottom: "20px",
 };
-const summaryCardStyle = {
-  background: "var(--surface-2)",
-  border: "1px solid var(--line)",
-  padding: "16px",
-  borderRadius: "9px",
-};
+const summaryCardStyle = { ...ui.card };
 const tableStyle = {
   width: "100%",
   borderCollapse: "collapse",
   minWidth: "1000px",
 };
-const warningStyle = {
-  padding: "12px 14px",
-  marginBottom: "16px",
-  background: "#fff8df",
-  border: "1px solid #ead99f",
-  borderRadius: "8px",
-  color: "#6b4e00",
-};
+const warningStyle = { ...ui.notice };
 const messageStyle = {
   padding: "12px 14px",
   marginBottom: "16px",
@@ -543,9 +488,4 @@ const totalStyle = {
   fontSize: "22px",
   fontWeight: "700",
 };
-const helpStyle = {
-  color: "var(--muted)",
-  fontSize: "13px",
-  textAlign: "right",
-  marginTop: "6px",
-};
+const helpStyle = { ...ui.help };
