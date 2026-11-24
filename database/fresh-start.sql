@@ -86,7 +86,7 @@ begin
   if not exists (select 1 from app_users u where u.user_id = auth.uid() and u.role = 'admin' and u.active) then
     raise exception 'Only the admin can retire Shopify.';
   end if;
-  update shopify_import_settings set enabled = false, payouts_enabled = false;
+  update shopify_import_settings set enabled = false, payouts_enabled = false where true;
 end $$;
 
 revoke all on function public.retire_shopify() from public, anon;
