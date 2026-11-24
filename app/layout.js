@@ -1,3 +1,4 @@
+import "./globals.css";
 import AuthGate from "./AuthGate";
 import PwaRegistration from "./PwaRegistration";
 
@@ -16,13 +17,13 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#111111",
+  themeColor: "#12324a",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0 }}>
+      <body>
         <PwaRegistration />
         <AuthGate>{children}</AuthGate>
       </body>

@@ -379,9 +379,9 @@ export default function CashFlowPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
@@ -390,16 +390,16 @@ export default function CashFlowPage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
           Cash Flow & Accounts
         </h1>
-        <p style={{ color: "#666", margin: "0 0 28px" }}>
+        <p style={{ color: "var(--muted)", margin: "0 0 28px" }}>
           View balances, move money between accounts and record director funds.
         </p>
 
@@ -410,8 +410,8 @@ export default function CashFlowPage() {
               marginBottom: "20px",
               borderRadius: "9px",
               background:
-                messageType === "error" ? "#fff0f0" : "#edf9f0",
-              color: messageType === "error" ? "#9b1c1c" : "#176b31",
+                messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)",
+              color: messageType === "error" ? "#9b2c17" : "var(--leaf)",
               border:
                 messageType === "error"
                   ? "1px solid #f1c1c1"
@@ -498,14 +498,14 @@ export default function CashFlowPage() {
                 background: "#fff",
                 padding: "28px",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
                 marginBottom: "24px",
               }}
             >
               {activeForm === "transfer" && (
                 <form onSubmit={saveTransfer}>
                   <h2 style={{ marginTop: 0 }}>Transfer Money</h2>
-                  <p style={{ color: "#666", marginTop: "-8px" }}>
+                  <p style={{ color: "var(--muted)", marginTop: "-8px" }}>
                     Move money between business accounts. Any transfer fee is
                     recorded separately.
                   </p>
@@ -597,7 +597,7 @@ export default function CashFlowPage() {
                       margin: "16px 0",
                       padding: "14px",
                       borderRadius: "8px",
-                      background: "#f7f7f8",
+                      background: "var(--sand)",
                     }}
                   >
                     Amount arriving:{" "}
@@ -621,7 +621,7 @@ export default function CashFlowPage() {
               {activeForm === "director" && (
                 <form onSubmit={saveDirectorTransaction}>
                   <h2 style={{ marginTop: 0 }}>Director Money</h2>
-                  <p style={{ color: "#666", marginTop: "-8px" }}>
+                  <p style={{ color: "var(--muted)", marginTop: "-8px" }}>
                     Record money a director puts into or takes out of the
                     business. This does not count as sales or an operating
                     expense.
@@ -708,7 +708,7 @@ export default function CashFlowPage() {
               {activeForm === "account" && (
                 <form onSubmit={saveAccount}>
                   <h2 style={{ marginTop: 0 }}>Add Account</h2>
-                  <p style={{ color: "#666", marginTop: "-8px" }}>
+                  <p style={{ color: "var(--muted)", marginTop: "-8px" }}>
                     Add a bank, cash, Square or Shopify account to track.
                   </p>
 
@@ -776,7 +776,7 @@ export default function CashFlowPage() {
               style={{
                 background: "#fff",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
                 overflowX: "auto",
               }}
             >
@@ -784,7 +784,7 @@ export default function CashFlowPage() {
                 <h2 style={{ margin: "0 0 5px" }}>
                   Recent Cash Transactions
                 </h2>
-                <div style={{ color: "#666", fontSize: "14px" }}>
+                <div style={{ color: "var(--muted)", fontSize: "14px" }}>
                   Latest 30 entries
                 </div>
               </div>
@@ -793,7 +793,7 @@ export default function CashFlowPage() {
                 <div
                   style={{
                     padding: "0 26px 26px",
-                    color: "#666",
+                    color: "var(--muted)",
                   }}
                 >
                   No cash transactions recorded yet.
@@ -810,7 +810,7 @@ export default function CashFlowPage() {
                     <tr
                       style={{
                         textAlign: "left",
-                        background: "#fafafa",
+                        background: "var(--surface-2)",
                       }}
                     >
                       <Th>Date</Th>
@@ -835,7 +835,7 @@ export default function CashFlowPage() {
                       return (
                         <tr
                           key={transaction.id}
-                          style={{ borderTop: "1px solid #eee" }}
+                          style={{ borderTop: "1px solid var(--line)" }}
                         >
                           <Td>
                             {new Date(
@@ -867,10 +867,10 @@ export default function CashFlowPage() {
                             <strong
                               style={{
                                 color: incoming
-                                  ? "#176b31"
+                                  ? "var(--leaf)"
                                   : outgoing
-                                    ? "#9b1c1c"
-                                    : "#111",
+                                    ? "#9b2c17"
+                                    : "var(--ink)",
                               }}
                             >
                               {incoming ? "+" : outgoing ? "−" : ""}
@@ -902,16 +902,16 @@ function BalanceCard({ title, type, balance, featured = false }) {
   return (
     <div
       style={{
-        background: featured ? "#111" : "#fff",
-        color: featured ? "#fff" : "#111",
+        background: featured ? "var(--ink)" : "#fff",
+        color: featured ? "#fff" : "var(--ink)",
         padding: "22px",
         borderRadius: "12px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+        boxShadow: "var(--shadow)",
       }}
     >
       <div
         style={{
-          color: featured ? "#ccc" : "#666",
+          color: featured ? "var(--line-strong)" : "var(--muted)",
           fontSize: "13px",
           marginBottom: "7px",
           textTransform: "capitalize",
@@ -937,9 +937,9 @@ function FormTab({ active, onClick, children }) {
       style={{
         padding: "12px 16px",
         borderRadius: "8px",
-        border: active ? "1px solid #111" : "1px solid #ccc",
-        background: active ? "#111" : "#fff",
-        color: active ? "#fff" : "#111",
+        border: active ? "1px solid var(--ink)" : "1px solid var(--line-strong)",
+        background: active ? "var(--ink)" : "#fff",
+        color: active ? "#fff" : "var(--ink)",
         fontWeight: "700",
         cursor: "pointer",
       }}
@@ -991,7 +991,7 @@ function SubmitButton({ saving, children }) {
         padding: "15px",
         border: "none",
         borderRadius: "9px",
-        background: saving ? "#777" : "#111",
+        background: saving ? "var(--muted)" : "var(--ink)",
         color: "#fff",
         fontSize: "16px",
         fontWeight: "700",

@@ -218,9 +218,9 @@ export default function ExpensesPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -229,10 +229,10 @@ export default function ExpensesPage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <h1
@@ -246,7 +246,7 @@ export default function ExpensesPage() {
 
         <p
           style={{
-            color: "#666",
+            color: "var(--muted)",
             margin: "0 0 28px",
           }}
         >
@@ -260,8 +260,8 @@ export default function ExpensesPage() {
               marginBottom: "20px",
               borderRadius: "9px",
               background:
-                messageType === "error" ? "#fff0f0" : "#edf9f0",
-              color: messageType === "error" ? "#9b1c1c" : "#176b31",
+                messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)",
+              color: messageType === "error" ? "#9b2c17" : "var(--leaf)",
               border:
                 messageType === "error"
                   ? "1px solid #f1c1c1"
@@ -291,7 +291,7 @@ export default function ExpensesPage() {
                   background: "#fff",
                   padding: "28px",
                   borderRadius: "14px",
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                  boxShadow: "var(--shadow)",
                   marginBottom: "20px",
                 }}
               >
@@ -459,7 +459,7 @@ export default function ExpensesPage() {
                     padding: "16px",
                     border: "none",
                     borderRadius: "9px",
-                    background: saving ? "#777" : "#111",
+                    background: saving ? "var(--muted)" : "var(--ink)",
                     color: "#fff",
                     fontSize: "17px",
                     fontWeight: "700",
@@ -477,7 +477,7 @@ export default function ExpensesPage() {
               style={{
                 background: "#fff",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
                 overflowX: "auto",
               }}
             >
@@ -495,13 +495,13 @@ export default function ExpensesPage() {
                   <h2 style={{ margin: "0 0 5px" }}>
                     Recent Expenses
                   </h2>
-                  <div style={{ color: "#666", fontSize: "14px" }}>
+                  <div style={{ color: "var(--muted)", fontSize: "14px" }}>
                     Latest 20 entries
                   </div>
                 </div>
 
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#666", fontSize: "13px" }}>
+                  <div style={{ color: "var(--muted)", fontSize: "13px" }}>
                     Shown Total
                   </div>
                   <strong style={{ fontSize: "22px" }}>
@@ -514,7 +514,7 @@ export default function ExpensesPage() {
                 <div
                   style={{
                     padding: "0 26px 26px",
-                    color: "#666",
+                    color: "var(--muted)",
                   }}
                 >
                   No expenses recorded yet.
@@ -531,7 +531,7 @@ export default function ExpensesPage() {
                     <tr
                       style={{
                         textAlign: "left",
-                        background: "#fafafa",
+                        background: "var(--surface-2)",
                       }}
                     >
                       <Th>Date</Th>
@@ -548,7 +548,7 @@ export default function ExpensesPage() {
                     {recentExpenses.map((expense) => (
                       <tr
                         key={expense.id}
-                        style={{ borderTop: "1px solid #eee" }}
+                        style={{ borderTop: "1px solid var(--line)" }}
                       >
                         <Td>{expense.expense_date}</Td>
                         <Td>{expense.category}</Td>

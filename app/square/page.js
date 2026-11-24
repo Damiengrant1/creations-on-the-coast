@@ -62,12 +62,12 @@ export default function SquarePayoutsPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
-        <Link href="/" style={linkStyle}>← Back to Dashboard</Link>
+        <Link href="/" style={linkStyle}>← Home</Link>
         <h1 style={{ fontSize: "36px", margin: "24px 0 8px" }}>Square Payouts</h1>
         <p style={mutedStyle}>Move cleared Square payouts to your bank and record Square processing fees automatically.</p>
 
         {error && <div role="alert" style={{ ...noticeStyle, background: "#fff1f2", color: "#991b1b" }}>{error}</div>}
-        {message && <div role="status" style={{ ...noticeStyle, background: "#edf9f0", color: "#166534" }}>{message}</div>}
+        {message && <div role="status" style={{ ...noticeStyle, background: "var(--leaf-soft)", color: "var(--leaf)" }}>{message}</div>}
 
         {!data ? <p>Loading Square payout settings…</p> : (
           <>
@@ -117,11 +117,11 @@ export default function SquarePayoutsPage() {
                         <td style={cellStyle}>{payout.gross_amount === null ? "—" : money(payout.gross_amount)}</td>
                         <td style={cellStyle}>{payout.fee_amount === null ? "—" : money(payout.fee_amount)}</td>
                         <td style={cellStyle}><strong>{money(payout.net_amount)}</strong></td>
-                        <td style={{ ...cellStyle, color: payout.status === "imported" ? "#166534" : "#9a5a00", fontWeight: 700 }}>{payout.status === "imported" ? "Imported" : "Needs review"}</td>
+                        <td style={{ ...cellStyle, color: payout.status === "imported" ? "var(--leaf)" : "#9a5a00", fontWeight: 700 }}>{payout.status === "imported" ? "Imported" : "Needs review"}</td>
                         <td style={{ ...cellStyle, maxWidth: "420px" }}>{payout.detail}</td>
                       </tr>
                     ))}
-                    {!data.payouts.length && <tr><td colSpan="6" style={{ ...cellStyle, color: "#666" }}>No Square payouts have been recorded yet.</td></tr>}
+                    {!data.payouts.length && <tr><td colSpan="6" style={{ ...cellStyle, color: "var(--muted)" }}>No Square payouts have been recorded yet.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -133,15 +133,15 @@ export default function SquarePayoutsPage() {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 22px", fontFamily: "Arial, sans-serif", color: "#111" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 22px", fontFamily: "var(--font)", color: "var(--ink)" };
 const cardStyle = { background: "#fff", borderRadius: "16px", padding: "26px", marginTop: "22px", boxShadow: "0 4px 18px rgba(0,0,0,.04)" };
-const mutedStyle = { color: "#555", lineHeight: 1.65 };
+const mutedStyle = { color: "var(--muted)", lineHeight: 1.65 };
 const noticeStyle = { padding: "16px 18px", margin: "18px 0", borderRadius: "10px", lineHeight: 1.6 };
-const buttonStyle = { background: "#111", color: "#fff", padding: "13px 18px", border: 0, borderRadius: "9px", fontSize: "15px", fontWeight: 700, cursor: "pointer" };
-const secondaryButtonStyle = { ...buttonStyle, background: "#fff", color: "#222", border: "1px solid #bbb" };
+const buttonStyle = { background: "var(--ink)", color: "#fff", padding: "13px 18px", border: 0, borderRadius: "9px", fontSize: "15px", fontWeight: 700, cursor: "pointer" };
+const secondaryButtonStyle = { ...buttonStyle, background: "#fff", color: "var(--ink)", border: "1px solid #bbb" };
 const buttonRowStyle = { display: "flex", gap: "12px", flexWrap: "wrap" };
-const linkStyle = { color: "#111", fontWeight: 700 };
-const flowStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px", padding: "18px", borderRadius: "10px", background: "#fafafa", lineHeight: 1.5 };
-const arrowStyle = { fontSize: "24px", fontWeight: 700, color: "#555" };
+const linkStyle = { color: "var(--ink)", fontWeight: 700 };
+const flowStyle = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px", padding: "18px", borderRadius: "10px", background: "var(--surface-2)", lineHeight: 1.5 };
+const arrowStyle = { fontSize: "24px", fontWeight: 700, color: "var(--muted)" };
 const tableStyle = { width: "100%", borderCollapse: "collapse", minWidth: "860px" };
-const cellStyle = { padding: "14px 10px", textAlign: "left", verticalAlign: "top", borderBottom: "1px solid #eee", lineHeight: 1.5 };
+const cellStyle = { padding: "14px 10px", textAlign: "left", verticalAlign: "top", borderBottom: "1px solid var(--line)", lineHeight: 1.5 };

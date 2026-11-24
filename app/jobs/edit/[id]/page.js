@@ -62,6 +62,12 @@ export default function EditJobPage() {
   const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
   const [accountId, setAccountId] = useState("");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (loading || !window.location.hash) return;
+    const target = document.querySelector(window.location.hash);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [loading]);
   const [saving, setSaving] = useState(false);
   const [converting, setConverting] = useState(false);
   const [message, setMessage] = useState("");
@@ -379,7 +385,7 @@ export default function EditJobPage() {
 
     if (
       !window.confirm(
-        "Convert this job into a paid sale? This will update sales, cash and stock."
+        "Take payment for this job? This records the sale, the money and takes the items off stock."
       )
     ) {
       return;
@@ -418,8 +424,23 @@ export default function EditJobPage() {
     } else {
       setSaleId(data);
       updateForm("paymentStatus", "paid");
+
+      // A job waiting for collection/postage is finished once it's paid for.
+      let finished = false;
+      if (form.status === "ready_for_collection_postage") {
+        const now = new Date().toISOString();
+        const { error: finishError } = await supabase
+          .from("jobs")
+          .update({ status: "completed", completed_at: now, updated_at: now })
+          .eq("id", jobId);
+        if (!finishError) {
+          updateForm("status", "completed");
+          finished = true;
+        }
+      }
+
       setMessage(
-        `Job #${jobNumber} converted to a sale successfully. Sales, cash and stock have been updated.`
+        `Payment taken for Job #${jobNumber}. Sales, cash and stock have been updated${finished ? " and the job is marked completed" : ""}.`
       );
       setSuccess(true);
     }
@@ -457,7 +478,7 @@ export default function EditJobPage() {
         <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
           Edit Job #{jobNumber}
         </h1>
-        <p style={{ color: "#666", margin: "0 0 26px" }}>
+        <p style={{ color: "var(--muted)", margin: "0 0 26px" }}>
           Correct job information, update items or convert it into a sale.
         </p>
 
@@ -602,8 +623,8 @@ export default function EditJobPage() {
         </form>
 
         {!saleId && (
-          <Section title="Convert Job to Sale">
-            <p style={{ color: "#555", marginTop: 0 }}>
+          <Section id="take-payment" title="Take payment (records the sale)">
+            <p style={{ color: "var(--muted)", marginTop: 0 }}>
               Use this once payment has been received in full. It will create
               the sale, record the cash and reduce stock automatically.
             </p>
@@ -637,7 +658,7 @@ export default function EditJobPage() {
               </Field>
             </div>
             <button type="button" onClick={convertToSale} disabled={converting || !stockLinked || !totalsMatch} style={convertButtonStyle}>
-              {converting ? "Converting..." : "Convert to Paid Sale"}
+              {converting ? "Saving..." : "Take payment & record sale"}
             </button>
           </Section>
         )}
@@ -646,9 +667,9 @@ export default function EditJobPage() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ id, title, children }) {
   return (
-    <div style={sectionStyle}>
+    <div id={id} style={{ ...sectionStyle, scrollMarginTop: "80px" }}>
       <h2 style={{ margin: "0 0 20px" }}>{title}</h2>
       {children}
     </div>
@@ -666,8 +687,8 @@ function Field({ label, children }) {
 
 function stockMessageStyle(type) {
   const colours = {
-    yes: { background: "#e8f7ed", color: "#176b35", border: "#b8dfc3" },
-    no: { background: "#fff0f0", color: "#9b1c1c", border: "#efb3b3" },
+    yes: { background: "#e8f7ed", color: "var(--leaf)", border: "#b8dfc3" },
+    no: { background: "var(--coral-soft)", color: "#9b2c17", border: "#efb3b3" },
     check: { background: "#fff8df", color: "#6b4e00", border: "#ead99f" },
     info: { background: "#eef4ff", color: "#254f87", border: "#c8d7ef" },
   };
@@ -684,19 +705,19 @@ function stockMessageStyle(type) {
   };
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "#333" };
-const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", marginBottom: "20px" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
+const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "var(--text-2)" };
+const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "20px" };
 const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" };
 const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
-const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ccc", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const itemCardStyle = { border: "1px solid #e3e3e3", background: "#fafafa", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
+const fieldStyle = { width: "100%", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
+const itemCardStyle = { border: "1px solid #e3e3e3", background: "var(--surface-2)", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
 const itemHeadingStyle = { display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", marginBottom: "14px" };
 const secondaryButtonStyle = { padding: "11px 15px", border: "1px solid #aaa", borderRadius: "8px", background: "#fff", fontWeight: "700", cursor: "pointer" };
-const removeButtonStyle = { ...secondaryButtonStyle, color: "#9b1c1c", borderColor: "#d3a0a0", padding: "7px 10px" };
-const saveButtonStyle = { width: "100%", padding: "15px", border: 0, borderRadius: "9px", background: "#111", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer", marginBottom: "20px" };
-const convertButtonStyle = { ...saveButtonStyle, background: "#176b35", marginBottom: 0 };
-const helpStyle = { color: "#666", fontSize: "13px", marginTop: "6px" };
-const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "#fff0f0", color: "#9b1c1c", border: "1px solid #f1c1c1", fontWeight: "600" };
-const successStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "#eefaf0", color: "#166534", border: "1px solid #b9dfc2", fontWeight: "600" };
+const removeButtonStyle = { ...secondaryButtonStyle, color: "#9b2c17", borderColor: "#d3a0a0", padding: "7px 10px" };
+const saveButtonStyle = { width: "100%", padding: "15px", border: 0, borderRadius: "9px", background: "var(--ink)", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer", marginBottom: "20px" };
+const convertButtonStyle = { ...saveButtonStyle, background: "var(--leaf)", marginBottom: 0 };
+const helpStyle = { color: "var(--muted)", fontSize: "13px", marginTop: "6px" };
+const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };
+const successStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "#eefaf0", color: "var(--leaf)", border: "1px solid #b9dfc2", fontWeight: "600" };
 const warningStyle = { padding: "12px 14px", marginBottom: "16px", borderRadius: "8px", background: "#fff8df", color: "#6b4e00", border: "1px solid #ead99f" };

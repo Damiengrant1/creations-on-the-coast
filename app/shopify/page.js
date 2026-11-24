@@ -53,11 +53,11 @@ export default function ShopifyPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        <Link href="/" style={{ color: "#444", textDecoration: "none", fontWeight: 700 }}>
-          ← Back to Dashboard
+        <Link href="/" style={{ color: "var(--text-2)", textDecoration: "none", fontWeight: 700 }}>
+          ← Home
         </Link>
         <h1 style={{ fontSize: "36px", margin: "24px 0 8px" }}>Shopify</h1>
-        <p style={{ color: "#666", margin: "0 0 28px", lineHeight: 1.6 }}>
+        <p style={{ color: "var(--muted)", margin: "0 0 28px", lineHeight: 1.6 }}>
           Connect website orders and Shopify Payments to Creations on the Coast.
         </p>
 
@@ -65,7 +65,7 @@ export default function ShopifyPage() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <h2 id="connection-heading" style={{ fontSize: "22px", margin: "0 0 8px" }}>Store connection</h2>
-              <p style={{ margin: 0, color: "#666", lineHeight: 1.6 }}>
+              <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>
                 Check that this dashboard can access your Shopify store.
               </p>
             </div>
@@ -76,11 +76,11 @@ export default function ShopifyPage() {
           </div>
 
           <div aria-live="polite" aria-busy={checking}>
-            {checking && <p style={{ color: "#666", marginTop: "22px" }}>Checking your admin access and Shopify connection…</p>}
-            {error && <div role="alert" style={{ ...noticeStyle, background: "#fff0f0", color: "#9b1c1c", borderColor: "#f1c1c1" }}>{error}</div>}
+            {checking && <p style={{ color: "var(--muted)", marginTop: "22px" }}>Checking your admin access and Shopify connection…</p>}
+            {error && <div role="alert" style={{ ...noticeStyle, background: "var(--coral-soft)", color: "#9b2c17", borderColor: "#f1c1c1" }}>{error}</div>}
             {result && (
               <>
-                <div style={{ ...noticeStyle, background: "#effaf1", color: "#166534", borderColor: "#c6e5cd" }}>
+                <div style={{ ...noticeStyle, background: "#effaf1", color: "var(--leaf)", borderColor: "#c6e5cd" }}>
                   <strong>Connected to {result.shop.name}</strong>
                   <div style={{ marginTop: "5px", fontWeight: 400 }}>Connection checked successfully.</div>
                 </div>
@@ -91,18 +91,18 @@ export default function ShopifyPage() {
                 </dl>
                 <h3 style={{ fontSize: "17px", marginBottom: "10px" }}>Access permissions</h3>
                 {result.permissions.map(({ scope, granted }) => (
-                  <div key={scope} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", padding: "13px 0", borderBottom: "1px solid #eee" }}>
+                  <div key={scope} style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", padding: "13px 0", borderBottom: "1px solid var(--line)" }}>
                     <span>{permissionNames[scope] || scope}</span>
-                    <strong style={{ color: granted ? "#166534" : "#9b1c1c" }}>{granted ? "Granted" : "Missing"}</strong>
+                    <strong style={{ color: granted ? "var(--leaf)" : "#9b2c17" }}>{granted ? "Granted" : "Missing"}</strong>
                   </div>
                 ))}
                 {!result.permissionsReady && (
-                  <p style={{ color: "#9b1c1c", lineHeight: 1.6 }}>
+                  <p style={{ color: "#9b2c17", lineHeight: 1.6 }}>
                     Add the missing permissions to your app in Shopify&apos;s Dev Dashboard, release the updated version,
                     approve the permissions on your store, then check again.
                   </p>
                 )}
-                <p style={{ fontSize: "13px", color: "#666", marginBottom: 0 }}>
+                <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: 0 }}>
                   Last checked: {new Date(result.checkedAt).toLocaleString("en-GB", { timeZone: "Europe/London" })} (UK time)
                 </p>
               </>
@@ -112,7 +112,7 @@ export default function ShopifyPage() {
 
         <section style={{ ...cardStyle, marginTop: "22px" }} aria-labelledby="imports-heading">
           <h2 id="imports-heading" style={{ fontSize: "22px", margin: "0 0 10px" }}>Website sales and jobs</h2>
-          <p style={{ color: "#555", lineHeight: 1.7 }}>Manage automatic paid-order imports, product matching and orders needing review.</p>
+          <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Manage automatic paid-order imports, product matching and orders needing review.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
             <Link href="/shopify/imports" style={{ ...buttonStyle, textDecoration: "none" }}>Automatic imports</Link>
             <Link href="/shopify/products" style={{ ...buttonStyle, textDecoration: "none" }}>Product matching</Link>
@@ -121,7 +121,7 @@ export default function ShopifyPage() {
 
         <section style={{ ...cardStyle, marginTop: "22px" }} aria-labelledby="payouts-heading">
           <h2 id="payouts-heading" style={{ fontSize: "22px", margin: "0 0 10px" }}>Shopify Payments payouts</h2>
-          <p style={{ color: "#555", lineHeight: 1.7 }}>Track cleared Shopify payouts to your bank and record Shopify payment fees automatically.</p>
+          <p style={{ color: "var(--muted)", lineHeight: 1.7 }}>Track cleared Shopify payouts to your bank and record Shopify payment fees automatically.</p>
           <Link href="/shopify/payouts" style={{ ...buttonStyle, textDecoration: "none" }}>Payouts and fees</Link>
         </section>
       </div>
@@ -132,13 +132,13 @@ export default function ShopifyPage() {
 function Detail({ title, value }) {
   return (
     <div>
-      <dt style={{ color: "#666", fontSize: "13px", marginBottom: "7px" }}>{title}</dt>
+      <dt style={{ color: "var(--muted)", fontSize: "13px", marginBottom: "7px" }}>{title}</dt>
       <dd style={{ margin: 0, fontWeight: 700, overflowWrap: "anywhere" }}>{value}</dd>
     </div>
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "50px 20px", fontFamily: "Arial, sans-serif", color: "#111" };
-const cardStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
-const buttonStyle = { border: 0, borderRadius: "9px", padding: "14px 22px", background: "#111", color: "#fff", fontWeight: 700, fontSize: "16px" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "50px 20px", fontFamily: "var(--font)", color: "var(--ink)" };
+const cardStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)" };
+const buttonStyle = { border: 0, borderRadius: "9px", padding: "14px 22px", background: "var(--ink)", color: "#fff", fontWeight: 700, fontSize: "16px" };
 const noticeStyle = { marginTop: "24px", padding: "16px", borderRadius: "9px", border: "1px solid", lineHeight: 1.6 };

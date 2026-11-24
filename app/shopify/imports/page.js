@@ -51,7 +51,7 @@ export default function ShopifyImportsPage(){
     <h1 style={{fontSize:34,marginBottom:8}}>Website sales</h1>
     <p style={muted}>Paid Shopify website orders, linked jobs and import checks.</p>
     {error&&<div role="alert" style={{...notice,background:"#fff1f2",color:"#991b1b"}}>{error}</div>}
-    {message&&<div role="status" style={{...notice,background:"#edf9f0",color:"#166534"}}>{message}</div>}
+    {message&&<div role="status" style={{...notice,background:"var(--leaf-soft)",color:"var(--leaf)"}}>{message}</div>}
     {!data?<p>Loading import settings…</p>:<>
       <section style={card}>
         <h2 style={{marginTop:0}}>Automatic imports: {cfg.enabled?"enabled":cfg.start_at?"paused":"not enabled"}</h2>
@@ -83,10 +83,10 @@ export default function ShopifyImportsPage(){
           <tbody>{data.orders.map(o=><tr key={o.order_id}>
             <td style={cell}><a href={`https://admin.shopify.com/store/ku1cvy-ue/orders/${o.order_id.split("/").pop()}`} target="_blank" rel="noreferrer" style={link}>{o.order_name}</a></td>
             <td style={cell}>{when(o.order_created_at)}</td>
-            <td style={{...cell,color:o.status==="needs_review"?"#a33d00":o.status==="imported"?"#166534":"#444",fontWeight:700}}>{labels[o.status]||o.status}</td>
+            <td style={{...cell,color:o.status==="needs_review"?"#a33d00":o.status==="imported"?"var(--leaf)":"var(--text-2)",fontWeight:700}}>{labels[o.status]||o.status}</td>
             <td style={{...cell,maxWidth:430}}>{o.detail}</td>
             <td style={cell}>{o.job_id?<Link href={`/jobs/edit/${o.job_id}`} style={link}>View job</Link>:!o.sale_id&&["needs_review","paused"].includes(o.status)?<button disabled={busy||!cfg.enabled} onClick={()=>run("retry",{orderId:o.order_id})} style={secondary}>Retry after matching</button>:"—"}</td>
-          </tr>)}{!data.orders.length&&<tr><td colSpan={5} style={{...cell,color:"#666"}}>No orders received{reviewOnly?" needing review":" yet"}.</td></tr>}</tbody>
+          </tr>)}{!data.orders.length&&<tr><td colSpan={5} style={{...cell,color:"var(--muted)"}}>No orders received{reviewOnly?" needing review":" yet"}.</td></tr>}</tbody>
         </table></div>
       </section>
       <section style={card}>
@@ -98,12 +98,12 @@ export default function ShopifyImportsPage(){
     </>}
   </div></main>;
 }
-const page={minHeight:"100vh",background:"#f7f7f8",padding:"40px 22px",fontFamily:"Arial,sans-serif",color:"#111"};
+const page={minHeight:"100vh",background:"var(--sand)",padding:"40px 22px",fontFamily:"var(--font)",color:"var(--ink)"};
 const card={background:"white",borderRadius:16,padding:26,marginTop:22,boxShadow:"0 4px 18px rgba(0,0,0,.04)"};
-const muted={color:"#555",lineHeight:1.65};
+const muted={color:"var(--muted)",lineHeight:1.65};
 const notice={padding:18,borderRadius:10,margin:"16px 0",lineHeight:1.6};
-const button={background:"#111",color:"white",padding:"13px 18px",border:0,borderRadius:9,fontSize:15,fontWeight:700,cursor:"pointer"};
-const secondary={...button,background:"white",color:"#222",border:"1px solid #ccc"};
+const button={background:"var(--ink)",color:"white",padding:"13px 18px",border:0,borderRadius:9,fontSize:15,fontWeight:700,cursor:"pointer"};
+const secondary={...button,background:"white",color:"var(--ink)",border:"1px solid var(--line-strong)"};
 const buttons={display:"flex",flexWrap:"wrap",alignItems:"center",gap:12};
-const link={color:"#111",fontWeight:700,textDecoration:"underline"};
-const cell={textAlign:"left",padding:"15px 10px",borderBottom:"1px solid #eee",verticalAlign:"top",lineHeight:1.5};
+const link={color:"var(--ink)",fontWeight:700,textDecoration:"underline"};
+const cell={textAlign:"left",padding:"15px 10px",borderBottom:"1px solid var(--line)",verticalAlign:"top",lineHeight:1.5};

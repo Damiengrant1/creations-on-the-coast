@@ -38,7 +38,7 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit} style={cardStyle}>
         <div style={badgeStyle}>C</div>
         <h1 style={{ margin: "0 0 7px", fontSize: "30px" }}>Creations on the Coast</h1>
-        <p style={{ color: "#666", margin: "0 0 26px" }}>Sign in to the business management system.</p>
+        <p style={{ color: "var(--muted)", margin: "0 0 26px" }}>Sign in to the business management system.</p>
         {message && <div style={errorStyle}>{message}</div>}
         <label style={labelStyle}>Email address</label>
         <input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} style={fieldStyle} required />
@@ -54,11 +54,11 @@ export default function LoginPage() {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", display: "grid", placeItems: "center", padding: "24px", fontFamily: "Arial, sans-serif" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", display: "grid", placeItems: "center", padding: "24px", fontFamily: "var(--font)" };
 const cardStyle = { width: "100%", maxWidth: "420px", boxSizing: "border-box", background: "#fff", padding: "34px", borderRadius: "16px", boxShadow: "0 4px 24px rgba(0,0,0,0.09)", textAlign: "center" };
-const badgeStyle = { width: "54px", height: "54px", margin: "0 auto 18px", borderRadius: "50%", display: "grid", placeItems: "center", background: "#111", color: "#fff", fontSize: "26px", fontWeight: "700" };
+const badgeStyle = { width: "54px", height: "54px", margin: "0 auto 18px", borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--ink)", color: "#fff", fontSize: "26px", fontWeight: "700" };
 const labelStyle = { display: "block", marginBottom: "7px", fontWeight: "700", textAlign: "left" };
-const fieldStyle = { width: "100%", boxSizing: "border-box", padding: "13px", border: "1px solid #ccc", borderRadius: "8px", background: "#fff", fontSize: "16px" };
-const showStyle = { display: "flex", alignItems: "center", gap: "7px", marginTop: "11px", color: "#555", fontSize: "14px", textAlign: "left" };
-const buttonStyle = { width: "100%", marginTop: "23px", padding: "14px", border: "none", borderRadius: "8px", background: "#111", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: "pointer" };
-const errorStyle = { padding: "12px", marginBottom: "18px", borderRadius: "8px", background: "#fff0f0", border: "1px solid #f1c1c1", color: "#9b1c1c", textAlign: "left", fontWeight: "600" };
+const fieldStyle = { width: "100%", boxSizing: "border-box", padding: "13px", border: "1px solid var(--line-strong)", borderRadius: "8px", background: "#fff", fontSize: "16px" };
+const showStyle = { display: "flex", alignItems: "center", gap: "7px", marginTop: "11px", color: "var(--muted)", fontSize: "14px", textAlign: "left" };
+const buttonStyle = { width: "100%", marginTop: "23px", padding: "14px", border: "none", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: "pointer" };
+const errorStyle = { padding: "12px", marginBottom: "18px", borderRadius: "8px", background: "var(--coral-soft)", border: "1px solid #f1c1c1", color: "#9b2c17", textAlign: "left", fontWeight: "600" };

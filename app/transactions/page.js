@@ -257,13 +257,13 @@ export default function TransactionsPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "#333" }}>← Back to Dashboard</Link>
+        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
         <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Manage Transactions</h1>
-        <p style={{ color: "#666", margin: "0 0 18px" }}>Review entries, edit expenses and transfers, and safely remove mistakes or test data.</p>
+        <p style={{ color: "var(--muted)", margin: "0 0 18px" }}>Review entries, edit expenses and transfers, and safely remove mistakes or test data.</p>
 
         <div style={noticeStyle}><strong>Important:</strong> Use these controls rather than deleting database rows manually. Linked cash, stock and fee records are handled together.</div>
-        {message && <div style={{ ...alertStyle, background: "#edf9f0", color: "#176b31", borderColor: "#bfe2c8" }}>{message}</div>}
-        {error && <div style={{ ...alertStyle, background: "#fff0f0", color: "#9b1c1c", borderColor: "#f1c1c1" }}>{error}</div>}
+        {message && <div style={{ ...alertStyle, background: "var(--leaf-soft)", color: "var(--leaf)", borderColor: "#bfe2c8" }}>{message}</div>}
+        {error && <div style={{ ...alertStyle, background: "var(--coral-soft)", color: "#9b2c17", borderColor: "#f1c1c1" }}>{error}</div>}
 
         <div style={{ display: "flex", gap: "9px", flexWrap: "wrap", marginBottom: "18px" }}>
           {tabs.map(([key, label]) => <button key={key} type="button" onClick={() => { setActiveTab(key); setEditing(null); setMessage(""); setError(""); }} style={tabStyle(activeTab === key)}>{label}</button>)}
@@ -285,7 +285,7 @@ export default function TransactionsPage() {
                       <button type="button" disabled={deletingId === record.id} onClick={() => deleteRecord(record.id)} style={deleteButtonStyle}>{deletingId === record.id ? "Deleting..." : "Delete Safely"}</button>
                     </div>
                   </div>
-                  {lineItems.length > 0 && <div style={{ borderTop: "1px solid #eee", marginTop: "16px", paddingTop: "12px" }}>{lineItems.map((item) => <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: "16px", padding: "5px 0", color: "#555" }}><span>{item.quantity} × {productNames.get(item.product_id) || "Unknown product"}</span><strong>{money(activeTab === "sales" ? item.line_revenue : item.line_total)}</strong></div>)}</div>}
+                  {lineItems.length > 0 && <div style={{ borderTop: "1px solid var(--line)", marginTop: "16px", paddingTop: "12px" }}>{lineItems.map((item) => <div key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: "16px", padding: "5px 0", color: "var(--muted)" }}><span>{item.quantity} × {productNames.get(item.product_id) || "Unknown product"}</span><strong>{money(activeTab === "sales" ? item.line_revenue : item.line_total)}</strong></div>)}</div>}
                 </section>
               );
             })}
@@ -298,9 +298,9 @@ export default function TransactionsPage() {
 
 function EditPanel({ editing, onChange, onCancel, onSave, saving, accounts, events }) {
   return (
-    <form onSubmit={onSave} style={{ ...panelStyle, marginBottom: "18px", border: "2px solid #111" }}>
+    <form onSubmit={onSave} style={{ ...panelStyle, marginBottom: "18px", border: "2px solid var(--ink)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "center", flexWrap: "wrap", marginBottom: "18px" }}>
-        <div><h2 style={{ margin: 0 }}>Edit {editing.type === "expenses" ? "Expense" : "Transfer"}</h2><div style={{ color: "#666", fontSize: "14px", marginTop: "5px" }}>The linked cash records will be updated at the same time.</div></div>
+        <div><h2 style={{ margin: 0 }}>Edit {editing.type === "expenses" ? "Expense" : "Transfer"}</h2><div style={{ color: "var(--muted)", fontSize: "14px", marginTop: "5px" }}>The linked cash records will be updated at the same time.</div></div>
         <button type="button" onClick={onCancel} style={cancelButtonStyle}>Cancel</button>
       </div>
       {editing.type === "expenses" ? (
@@ -345,16 +345,16 @@ function RecordDetails({ type, record, accountNames, total }) {
 }
 
 function Title({ children }) { return <h2 style={{ fontSize: "19px", margin: "0 0 8px" }}>{children}</h2>; }
-function Meta({ children }) { return <div style={{ color: "#666", fontSize: "14px", marginTop: "5px" }}>{children}</div>; }
+function Meta({ children }) { return <div style={{ color: "var(--muted)", fontSize: "14px", marginTop: "5px" }}>{children}</div>; }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const panelStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
+const panelStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
 const noticeStyle = { padding: "14px 16px", marginBottom: "18px", borderRadius: "9px", background: "#fff8e5", border: "1px solid #ead59a", color: "#6d5310" };
 const alertStyle = { padding: "14px 16px", marginBottom: "18px", border: "1px solid", fontWeight: "600" };
 const fieldStyle = { width: "100%", padding: "11px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "15px", boxSizing: "border-box", background: "#fff" };
 const formGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "15px" };
-const editButtonStyle = { border: "1px solid #111", borderRadius: "8px", background: "#fff", color: "#111", padding: "11px 15px", fontWeight: "700", cursor: "pointer" };
+const editButtonStyle = { border: "1px solid var(--ink)", borderRadius: "8px", background: "#fff", color: "var(--ink)", padding: "11px 15px", fontWeight: "700", cursor: "pointer" };
 const deleteButtonStyle = { border: "none", borderRadius: "8px", background: "#a61b1b", color: "#fff", padding: "11px 15px", fontWeight: "700", cursor: "pointer" };
-const cancelButtonStyle = { border: "1px solid #aaa", borderRadius: "8px", background: "#fff", color: "#111", padding: "10px 14px", fontWeight: "700", cursor: "pointer" };
-const saveButtonStyle = { marginTop: "18px", width: "100%", border: "none", borderRadius: "8px", background: "#111", color: "#fff", padding: "14px", fontSize: "16px", fontWeight: "700", cursor: "pointer" };
-function tabStyle(active) { return { border: active ? "1px solid #111" : "1px solid #ccc", borderRadius: "8px", background: active ? "#111" : "#fff", color: active ? "#fff" : "#111", padding: "11px 14px", fontWeight: "700", cursor: "pointer" }; }
+const cancelButtonStyle = { border: "1px solid #aaa", borderRadius: "8px", background: "#fff", color: "var(--ink)", padding: "10px 14px", fontWeight: "700", cursor: "pointer" };
+const saveButtonStyle = { marginTop: "18px", width: "100%", border: "none", borderRadius: "8px", background: "var(--ink)", color: "#fff", padding: "14px", fontSize: "16px", fontWeight: "700", cursor: "pointer" };
+function tabStyle(active) { return { border: active ? "1px solid var(--ink)" : "1px solid var(--line-strong)", borderRadius: "8px", background: active ? "var(--ink)" : "#fff", color: active ? "#fff" : "var(--ink)", padding: "11px 14px", fontWeight: "700", cursor: "pointer" }; }

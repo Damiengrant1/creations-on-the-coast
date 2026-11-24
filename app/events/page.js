@@ -148,13 +148,13 @@ export default function EventsPage() {
   const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
 
   return (
-    <main style={{ minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" }}>
+    <main style={{ minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "#333" }}>← Back to Dashboard</Link>
+        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
         <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Events</h1>
-        <p style={{ color: "#666", margin: "0 0 26px" }}>Create events and track their sales, costs, expenses and profit.</p>
+        <p style={{ color: "var(--muted)", margin: "0 0 26px" }}>Create events and track their sales, costs, expenses and profit.</p>
 
-        {message && <div style={{ padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: messageType === "error" ? "#fff0f0" : "#edf9f0", color: messageType === "error" ? "#9b1c1c" : "#176b31", border: `1px solid ${messageType === "error" ? "#f1c1c1" : "#bfe2c8"}`, fontWeight: "600" }}>{message}</div>}
+        {message && <div style={{ padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)", color: messageType === "error" ? "#9b2c17" : "var(--leaf)", border: `1px solid ${messageType === "error" ? "#f1c1c1" : "#bfe2c8"}`, fontWeight: "600" }}>{message}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px", marginBottom: "22px" }}>
           <SummaryCard title="Events" value={events.length} />
@@ -163,7 +163,7 @@ export default function EventsPage() {
           <SummaryCard title="Event Net Profit" value={money(totals.profit)} featured />
         </div>
 
-        <form onSubmit={saveEvent} style={{ background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", marginBottom: "24px" }}>
+        <form onSubmit={saveEvent} style={{ background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "24px" }}>
           <h2 style={{ marginTop: 0 }}>Add Event</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "18px" }}>
             <Field label="Event Name" labelStyle={labelStyle}><input value={eventName} onChange={(e) => setEventName(e.target.value)} style={fieldStyle} required /></Field>
@@ -174,7 +174,7 @@ export default function EventsPage() {
             <Field label="Event Series" labelStyle={labelStyle}><select value={seriesId} onChange={(e) => setSeriesId(e.target.value)} style={fieldStyle}><option value="">No series</option>{series.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
           </div>
           <Field label="Notes" labelStyle={labelStyle}><textarea rows="3" value={notes} onChange={(e) => setNotes(e.target.value)} style={fieldStyle} /></Field>
-          <button type="submit" disabled={saving} style={{ width: "100%", padding: "15px", marginTop: "20px", border: "none", borderRadius: "9px", background: saving ? "#777" : "#111", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Creating Event..." : "Create Event"}</button>
+          <button type="submit" disabled={saving} style={{ width: "100%", padding: "15px", marginTop: "20px", border: "none", borderRadius: "9px", background: saving ? "var(--muted)" : "var(--ink)", color: "#fff", fontSize: "16px", fontWeight: "700", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Creating Event..." : "Create Event"}</button>
         </form>
 
         {loading ? <div style={cardStyle}>Loading events...</div> : events.length === 0 ? <div style={cardStyle}>No events created yet.</div> : (
@@ -183,7 +183,7 @@ export default function EventsPage() {
               const figures = performanceByEvent.get(event.id) || {};
               return <section key={event.id} style={cardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
-                  <div><h2 style={{ margin: "0 0 7px" }}>{event.event_name}</h2><div style={{ color: "#666" }}>{event.start_date}{event.end_date ? ` to ${event.end_date}` : ""} · {event.location || "No location"}</div>{event.event_series_id && <div style={{ color: "#777", marginTop: "5px", fontSize: "14px" }}>Series: {seriesNames.get(event.event_series_id) || "Unknown"}</div>}</div>
+                  <div><h2 style={{ margin: "0 0 7px" }}>{event.event_name}</h2><div style={{ color: "var(--muted)" }}>{event.start_date}{event.end_date ? ` to ${event.end_date}` : ""} · {event.location || "No location"}</div>{event.event_series_id && <div style={{ color: "var(--muted)", marginTop: "5px", fontSize: "14px" }}>Series: {seriesNames.get(event.event_series_id) || "Unknown"}</div>}</div>
                   <select value={event.status} onChange={(e) => changeStatus(event.id, e.target.value)} style={{ ...fieldStyle, width: "150px", height: "44px" }}><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: "12px", marginTop: "18px" }}>
@@ -193,7 +193,7 @@ export default function EventsPage() {
                   <Figure label="Expenses" value={money(figures.total_expenses)} />
                   <Figure label="Net Profit" value={money(figures.net_profit)} strong />
                 </div>
-                {event.notes && <div style={{ marginTop: "15px", color: "#666" }}>{event.notes}</div>}
+                {event.notes && <div style={{ marginTop: "15px", color: "var(--muted)" }}>{event.notes}</div>}
               </section>;
             })}
           </div>
@@ -203,7 +203,7 @@ export default function EventsPage() {
   );
 }
 
-const cardStyle = { background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
+const cardStyle = { background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "var(--shadow)" };
 function Field({ label, labelStyle, children }) { return <div><label style={labelStyle}>{label}</label>{children}</div>; }
-function SummaryCard({ title, value, featured }) { return <div style={{ ...cardStyle, background: featured ? "#111" : "#fff", color: featured ? "#fff" : "#111" }}><div style={{ color: featured ? "#ccc" : "#666", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div></div>; }
-function Figure({ label, value, strong }) { return <div style={{ padding: "14px", background: strong ? "#edf9f0" : "#f7f7f8", borderRadius: "9px" }}><div style={{ color: "#666", fontSize: "13px", marginBottom: "6px" }}>{label}</div><strong style={{ fontSize: "19px", color: strong ? "#176b31" : "#111" }}>{value}</strong></div>; }
+function SummaryCard({ title, value, featured }) { return <div style={{ ...cardStyle, background: featured ? "var(--ink)" : "#fff", color: featured ? "#fff" : "var(--ink)" }}><div style={{ color: featured ? "var(--line-strong)" : "var(--muted)", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div></div>; }
+function Figure({ label, value, strong }) { return <div style={{ padding: "14px", background: strong ? "var(--leaf-soft)" : "var(--sand)", borderRadius: "9px" }}><div style={{ color: "var(--muted)", fontSize: "13px", marginBottom: "6px" }}>{label}</div><strong style={{ fontSize: "19px", color: strong ? "var(--leaf)" : "var(--ink)" }}>{value}</strong></div>; }

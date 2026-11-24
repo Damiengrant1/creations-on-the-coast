@@ -245,9 +245,9 @@ export default function StocktakePage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div style={{ maxWidth: "1250px", margin: "0 auto" }}>
@@ -256,17 +256,17 @@ export default function StocktakePage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <div style={{ marginBottom: "24px" }}>
           <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
             Stocktake / Stock Adjustments
           </h1>
-          <p style={{ color: "#666", margin: 0 }}>
+          <p style={{ color: "var(--muted)", margin: 0 }}>
             Enter the actual quantity counted. The system will calculate and
             record the adjustment automatically.
           </p>
@@ -278,7 +278,7 @@ export default function StocktakePage() {
               background: "#fff",
               padding: "22px",
               borderRadius: "14px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: "var(--shadow)",
               marginBottom: "20px",
             }}
           >
@@ -355,8 +355,8 @@ export default function StocktakePage() {
                 marginBottom: "20px",
                 borderRadius: "9px",
                 background:
-                  messageType === "error" ? "#fff0f0" : "#edf9f0",
-                color: messageType === "error" ? "#9b1c1c" : "#176b31",
+                  messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)",
+                color: messageType === "error" ? "#9b2c17" : "var(--leaf)",
                 border:
                   messageType === "error"
                     ? "1px solid #f1c1c1"
@@ -372,7 +372,7 @@ export default function StocktakePage() {
             style={{
               background: "#fff",
               borderRadius: "14px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: "var(--shadow)",
               overflowX: "auto",
             }}
           >
@@ -392,7 +392,7 @@ export default function StocktakePage() {
                   <tr
                     style={{
                       textAlign: "left",
-                      background: "#fafafa",
+                      background: "var(--surface-2)",
                     }}
                   >
                     <Th>Product</Th>
@@ -416,12 +416,12 @@ export default function StocktakePage() {
                     return (
                       <tr
                         key={product.product_id}
-                        style={{ borderTop: "1px solid #eee" }}
+                        style={{ borderTop: "1px solid var(--line)" }}
                       >
                         <Td>
                           <strong>{product.product_name}</strong>
                           {!product.active && (
-                            <span style={{ color: "#777", marginLeft: "8px" }}>
+                            <span style={{ color: "var(--muted)", marginLeft: "8px" }}>
                               (Inactive)
                             </span>
                           )}
@@ -461,10 +461,10 @@ export default function StocktakePage() {
                                 fontWeight: "700",
                                 color:
                                   adjustment > 0
-                                    ? "#176b31"
+                                    ? "var(--leaf)"
                                     : adjustment < 0
-                                      ? "#9b1c1c"
-                                      : "#555",
+                                      ? "#9b2c17"
+                                      : "var(--muted)",
                               }}
                             >
                               {adjustment > 0 ? "+" : ""}
@@ -499,7 +499,7 @@ export default function StocktakePage() {
             <div>
               <strong>{enteredRows.length}</strong>{" "}
               {enteredRows.length === 1 ? "product" : "products"} counted
-              <div style={{ color: "#666", fontSize: "13px", marginTop: "4px" }}>
+              <div style={{ color: "var(--muted)", fontSize: "13px", marginTop: "4px" }}>
                 Preview net change: {adjustmentPreview > 0 ? "+" : ""}
                 {adjustmentPreview}
               </div>
@@ -512,7 +512,7 @@ export default function StocktakePage() {
                 border: "none",
                 borderRadius: "9px",
                 padding: "14px 20px",
-                background: saving || loading ? "#777" : "#111",
+                background: saving || loading ? "var(--muted)" : "var(--ink)",
                 color: "#fff",
                 fontWeight: "700",
                 fontSize: "16px",

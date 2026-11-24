@@ -363,7 +363,7 @@ export default function EventPosPage() {
         <div>
           <Link href="/" style={backStyle}>← Dashboard</Link>
           <h1 style={{ margin: "10px 0 4px" }}>Event POS</h1>
-          <p style={{ margin: 0, color: "#555" }}>Fast sales for events — customer details are not needed.</p>
+          <p style={{ margin: 0, color: "var(--muted)" }}>Fast sales for events — customer details are not needed.</p>
         </div>
         <button type="button" onClick={() => setBasket([])} disabled={!basket.length} style={secondaryButtonStyle}>Clear basket</button>
       </header>
@@ -414,7 +414,7 @@ export default function EventPosPage() {
 
         <aside style={basketStyle}>
           <h2 style={{ marginTop: 0 }}>Basket</h2>
-          {!basket.length ? <p style={{ color: "#666" }}>Tap products to add them here.</p> : basket.map((item, index) => <div key={`${item.productId}-${index}`} style={basketItemStyle}>
+          {!basket.length ? <p style={{ color: "var(--muted)" }}>Tap products to add them here.</p> : basket.map((item, index) => <div key={`${item.productId}-${index}`} style={basketItemStyle}>
             <strong>{item.name}</strong>
             <div style={itemControlsStyle}>
               <button type="button" onClick={() => updateItem(index, { quantity: Math.max(1, item.quantity - 1) })} style={smallButtonStyle}>−</button>
@@ -434,7 +434,7 @@ export default function EventPosPage() {
         <div style={modalBackdropStyle}>
           <section style={modalStyle}>
             <h2 style={{ marginTop: 0 }}>Add Miscellaneous Item</h2>
-            <p style={{ color: "#666", marginTop: 0 }}>Use this for an item not yet in the product list.</p>
+            <p style={{ color: "var(--muted)", marginTop: 0 }}>Use this for an item not yet in the product list.</p>
             <label style={labelStyle}>What was sold?
               <input value={miscellaneousDescription} onChange={(event) => setMiscellaneousDescription(event.target.value)} placeholder="e.g. Custom keyring" style={inputStyle} autoFocus />
             </label>
@@ -452,16 +452,16 @@ export default function EventPosPage() {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f4f4f5", padding: "24px", fontFamily: "Arial, sans-serif", boxSizing: "border-box" };
+const pageStyle = { minHeight: "100vh", background: "#f4f4f5", padding: "24px", fontFamily: "var(--font)", boxSizing: "border-box" };
 const headerStyle = { maxWidth: "1500px", margin: "0 auto 18px", display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "flex-start" };
-const backStyle = { color: "#222", fontWeight: "700" };
+const backStyle = { color: "var(--ink)", fontWeight: "700" };
 const settingsStyle = { maxWidth: "1500px", margin: "0 auto 18px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px", background: "#fff", padding: "18px", borderRadius: "14px" };
 const labelStyle = { display: "grid", gap: "7px", fontWeight: "700" };
-const inputStyle = { width: "100%", boxSizing: "border-box", padding: "12px", border: "1px solid #ccc", borderRadius: "8px", fontSize: "16px", background: "#fff" };
+const inputStyle = { width: "100%", boxSizing: "border-box", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", background: "#fff" };
 const layoutStyle = { maxWidth: "1500px", margin: "0 auto", display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(330px, 430px)", gap: "18px", alignItems: "start" };
 const categoryRowStyle = { display: "flex", flexWrap: "wrap", gap: "9px", marginBottom: "16px" };
 const categoryStyle = { border: "1px solid #bbb", background: "#fff", borderRadius: "9px", padding: "11px 14px", fontWeight: "700", cursor: "pointer" };
-const selectedCategoryStyle = { ...categoryStyle, background: "#111", color: "#fff", borderColor: "#111" };
+const selectedCategoryStyle = { ...categoryStyle, background: "var(--ink)", color: "#fff", borderColor: "var(--ink)" };
 const miscellaneousButtonStyle = { ...categoryStyle, background: "#fff7ed", borderColor: "#d97706", color: "#92400e" };
 const productGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "12px" };
 const productButtonStyle = { minHeight: "125px", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "16px", background: "#fff", border: "1px solid #ddd", borderRadius: "13px", cursor: "pointer", fontSize: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" };
@@ -472,14 +472,14 @@ const smallButtonStyle = { width: "31px", height: "31px", border: "1px solid #bb
 const priceInputStyle = { width: "68px", marginLeft: "3px", padding: "7px", border: "1px solid #bbb", borderRadius: "6px", fontSize: "15px" };
 const removeStyle = { border: "none", background: "transparent", color: "#a11", fontSize: "25px", cursor: "pointer", marginLeft: "2px" };
 const totalStyle = { display: "flex", justifyContent: "space-between", fontSize: "25px", padding: "20px 0", marginTop: "5px" };
-const completeStyle = { width: "100%", padding: "17px", background: "#111", border: "none", borderRadius: "10px", color: "#fff", fontSize: "18px", fontWeight: "700", cursor: "pointer" };
+const completeStyle = { width: "100%", padding: "17px", background: "var(--ink)", border: "none", borderRadius: "10px", color: "#fff", fontSize: "18px", fontWeight: "700", cursor: "pointer" };
 const paymentRowStyle = { display: "flex", gap: "8px", flexWrap: "wrap" };
 const paymentStyle = { padding: "11px 14px", border: "1px solid #bbb", borderRadius: "8px", background: "#fff", fontWeight: "700", cursor: "pointer" };
-const selectedPaymentStyle = { ...paymentStyle, background: "#111", color: "#fff", borderColor: "#111" };
+const selectedPaymentStyle = { ...paymentStyle, background: "var(--ink)", color: "#fff", borderColor: "var(--ink)" };
 const secondaryButtonStyle = { padding: "12px 16px", background: "#fff", border: "1px solid #bbb", borderRadius: "9px", fontWeight: "700", cursor: "pointer" };
 const panelStyle = { background: "#fff", padding: "24px", borderRadius: "14px" };
-const successStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#edf9f0", border: "1px solid #b9e5c2", borderRadius: "10px", color: "#166534", fontWeight: "700" };
-const errorStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#fff0f0", border: "1px solid #f1c1c1", borderRadius: "10px", color: "#9b1c1c", fontWeight: "700" };
+const successStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "var(--leaf-soft)", border: "1px solid #b9e5c2", borderRadius: "10px", color: "var(--leaf)", fontWeight: "700" };
+const errorStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "var(--coral-soft)", border: "1px solid #f1c1c1", borderRadius: "10px", color: "#9b2c17", fontWeight: "700" };
 const offlineStatusStyle = { maxWidth: "1500px", margin: "0 auto 18px", padding: "15px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: "10px", color: "#9a3412", fontWeight: "700" };
 const modalBackdropStyle = { position: "fixed", inset: 0, zIndex: 10, background: "rgba(0,0,0,0.45)", display: "grid", placeItems: "center", padding: "20px" };
 const modalStyle = { width: "min(100%, 440px)", background: "#fff", padding: "24px", borderRadius: "14px", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" };

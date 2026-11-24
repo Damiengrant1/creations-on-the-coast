@@ -259,9 +259,9 @@ export default function RecordSalePage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div
@@ -275,10 +275,10 @@ export default function RecordSalePage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <h1
@@ -292,7 +292,7 @@ export default function RecordSalePage() {
 
         <p
           style={{
-            color: "#666",
+            color: "var(--muted)",
             marginBottom: "28px",
           }}
         >
@@ -305,7 +305,7 @@ export default function RecordSalePage() {
               background: "#fff",
               padding: "28px",
               borderRadius: "14px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: "var(--shadow)",
               marginBottom: "20px",
             }}
           >
@@ -468,7 +468,7 @@ export default function RecordSalePage() {
               background: "#fff",
               padding: "28px",
               borderRadius: "14px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: "var(--shadow)",
               marginBottom: "20px",
             }}
           >
@@ -486,7 +486,7 @@ export default function RecordSalePage() {
                   key={index}
                   style={{
                     padding: "20px",
-                    background: "#f7f7f8",
+                    background: "var(--sand)",
                     borderRadius: "10px",
                     marginBottom: "16px",
                   }}
@@ -637,7 +637,7 @@ export default function RecordSalePage() {
                       <div
                         style={{
                           ...fieldStyle,
-                          background: "#eee",
+                          background: "var(--line)",
                           fontWeight: "700",
                         }}
                       >
@@ -654,7 +654,7 @@ export default function RecordSalePage() {
               onClick={addItem}
               style={{
                 padding: "12px 18px",
-                border: "1px solid #ccc",
+                border: "1px solid var(--line-strong)",
                 borderRadius: "8px",
                 background: "#fff",
                 fontWeight: "600",
@@ -670,7 +670,7 @@ export default function RecordSalePage() {
               background: "#fff",
               padding: "28px",
               borderRadius: "14px",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+              boxShadow: "var(--shadow)",
             }}
           >
             <div
@@ -683,7 +683,7 @@ export default function RecordSalePage() {
               }}
             >
               <div>
-                <div style={{ color: "#666" }}>
+                <div style={{ color: "var(--muted)" }}>
                   Sale Total
                 </div>
                 <div
@@ -697,7 +697,7 @@ export default function RecordSalePage() {
               </div>
 
               <div>
-                <div style={{ color: "#666" }}>
+                <div style={{ color: "var(--muted)" }}>
                   Direct Cost
                 </div>
                 <div
@@ -711,7 +711,7 @@ export default function RecordSalePage() {
               </div>
 
               <div>
-                <div style={{ color: "#666" }}>
+                <div style={{ color: "var(--muted)" }}>
                   Gross Profit
                 </div>
                 <div
@@ -729,7 +729,7 @@ export default function RecordSalePage() {
               <div
                 style={{
                   padding: "14px",
-                  background: "#f2f2f2",
+                  background: "var(--surface-2)",
                   borderRadius: "8px",
                   marginBottom: "18px",
                 }}
@@ -746,7 +746,7 @@ export default function RecordSalePage() {
                 padding: "16px",
                 border: "none",
                 borderRadius: "9px",
-                background: "#111",
+                background: "var(--ink)",
                 color: "#fff",
                 fontSize: "17px",
                 fontWeight: "700",

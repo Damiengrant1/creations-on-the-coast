@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabase";
-import { useAccess } from "../../AuthGate";
 
 const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
 
@@ -24,7 +23,6 @@ const displayDate = (value) => {
 const money = (value) => `£${Number(value || 0).toFixed(2)}`;
 
 export default function StockOrderPage() {
-  const { isAdmin } = useAccess();
   const [jobs, setJobs] = useState([]);
   const [activeJobs, setActiveJobs] = useState([]);
   const [products, setProducts] = useState([]);
@@ -234,7 +232,7 @@ export default function StockOrderPage() {
             <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
               Stock Order Form
             </h1>
-            <p style={{ color: "#666", margin: 0 }}>
+            <p style={{ color: "var(--muted)", margin: 0 }}>
               Combined requirements from jobs awaiting a stock order.
             </p>
           </div>
@@ -248,7 +246,7 @@ export default function StockOrderPage() {
             >
               Print / Save PDF
             </button>
-            {isAdmin && (
+            {(
               <button
                 type="button"
                 onClick={markPlaced}
@@ -334,7 +332,7 @@ export default function StockOrderPage() {
               <div style={{ overflowX: "auto" }}>
                 <table style={tableStyle}>
                   <thead>
-                    <tr style={{ textAlign: "left", background: "#f7f7f8" }}>
+                    <tr style={{ textAlign: "left", background: "var(--sand)" }}>
                       <Th>Product</Th>
                       <Th>SKU</Th>
                       <Th>Jobs / Customers</Th>
@@ -349,7 +347,7 @@ export default function StockOrderPage() {
                     {order.rows.map((row) => (
                       <tr
                         key={row.key}
-                        style={{ borderTop: "1px solid #eee" }}
+                        style={{ borderTop: "1px solid var(--line)" }}
                       >
                         <Td><strong>{row.description}</strong></Td>
                         <Td>{row.sku}</Td>
@@ -416,7 +414,7 @@ function Field({ label, children }) {
 function SummaryCard({ title, value }) {
   return (
     <div style={summaryCardStyle}>
-      <div style={{ color: "#666", fontSize: "13px", marginBottom: "6px" }}>
+      <div style={{ color: "var(--muted)", fontSize: "13px", marginBottom: "6px" }}>
         {title}
       </div>
       <div style={{ fontSize: "24px", fontWeight: "700" }}>{value}</div>
@@ -438,14 +436,14 @@ function Td({ children }) {
 
 const pageStyle = {
   minHeight: "100vh",
-  background: "#f7f7f8",
+  background: "var(--sand)",
   padding: "40px 20px",
-  fontFamily: "Arial, sans-serif",
+  fontFamily: "var(--font)",
 };
 const backLinkStyle = {
   display: "inline-block",
   marginBottom: "24px",
-  color: "#333",
+  color: "var(--text-2)",
 };
 const headingStyle = {
   display: "flex",
@@ -459,7 +457,7 @@ const panelStyle = {
   background: "#fff",
   padding: "26px",
   borderRadius: "14px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  boxShadow: "var(--shadow)",
 };
 const detailsGridStyle = {
   display: "grid",
@@ -475,7 +473,7 @@ const labelStyle = {
 const fieldStyle = {
   width: "100%",
   padding: "11px 12px",
-  border: "1px solid #ccc",
+  border: "1px solid var(--line-strong)",
   borderRadius: "8px",
   fontSize: "15px",
   boxSizing: "border-box",
@@ -484,7 +482,7 @@ const fieldStyle = {
 const primaryButtonStyle = {
   border: 0,
   borderRadius: "8px",
-  background: "#111",
+  background: "var(--ink)",
   color: "#fff",
   padding: "12px 15px",
   fontWeight: "700",
@@ -494,7 +492,7 @@ const secondaryButtonStyle = {
   ...primaryButtonStyle,
   border: "1px solid #aaa",
   background: "#fff",
-  color: "#111",
+  color: "var(--ink)",
 };
 const summaryGridStyle = {
   display: "grid",
@@ -503,8 +501,8 @@ const summaryGridStyle = {
   marginBottom: "20px",
 };
 const summaryCardStyle = {
-  background: "#fafafa",
-  border: "1px solid #eee",
+  background: "var(--surface-2)",
+  border: "1px solid var(--line)",
   padding: "16px",
   borderRadius: "9px",
 };
@@ -526,16 +524,16 @@ const messageStyle = {
   marginBottom: "16px",
   borderRadius: "8px",
   background: "#eefaf0",
-  color: "#166534",
+  color: "var(--leaf)",
   fontWeight: "600",
 };
 const emptyStyle = {
   padding: "28px",
   textAlign: "center",
-  color: "#666",
+  color: "var(--muted)",
 };
 const subTextStyle = {
-  color: "#666",
+  color: "var(--muted)",
   fontSize: "12px",
   marginTop: "3px",
 };
@@ -546,7 +544,7 @@ const totalStyle = {
   fontWeight: "700",
 };
 const helpStyle = {
-  color: "#666",
+  color: "var(--muted)",
   fontSize: "13px",
   textAlign: "right",
   marginTop: "6px",

@@ -372,9 +372,9 @@ export default function StockPurchasesPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div style={{ maxWidth: "1050px", margin: "0 auto" }}>
@@ -383,10 +383,10 @@ export default function StockPurchasesPage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <h1
@@ -400,7 +400,7 @@ export default function StockPurchasesPage() {
 
         <p
           style={{
-            color: "#666",
+            color: "var(--muted)",
             margin: "0 0 28px",
           }}
         >
@@ -408,7 +408,7 @@ export default function StockPurchasesPage() {
           the selected account will update automatically.
         </p>
 
-        <Link href="/supplier-credits" style={{ display: "inline-block", marginBottom: "24px", color: "#333", fontWeight: "600" }}>
+        <Link href="/supplier-credits" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)", fontWeight: "600" }}>
           Record a supplier refund or credit note →
         </Link>
 
@@ -419,8 +419,8 @@ export default function StockPurchasesPage() {
               marginBottom: "20px",
               borderRadius: "9px",
               background:
-                messageType === "error" ? "#fff0f0" : "#edf9f0",
-              color: messageType === "error" ? "#9b1c1c" : "#176b31",
+                messageType === "error" ? "var(--coral-soft)" : "var(--leaf-soft)",
+              color: messageType === "error" ? "#9b2c17" : "var(--leaf)",
               border:
                 messageType === "error"
                   ? "1px solid #f1c1c1"
@@ -449,7 +449,7 @@ export default function StockPurchasesPage() {
                 background: "#fff",
                 padding: "28px",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
                 marginBottom: "20px",
               }}
             >
@@ -553,7 +553,7 @@ export default function StockPurchasesPage() {
                 background: "#fff",
                 padding: "28px",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
                 marginBottom: "20px",
               }}
             >
@@ -568,7 +568,7 @@ export default function StockPurchasesPage() {
                     key={index}
                     style={{
                       padding: "20px",
-                      background: "#f7f7f8",
+                      background: "var(--sand)",
                       borderRadius: "10px",
                       marginBottom: "16px",
                     }}
@@ -711,7 +711,7 @@ export default function StockPurchasesPage() {
                         <div
                           style={{
                             ...fieldStyle,
-                            background: "#eee",
+                            background: "var(--line)",
                             fontWeight: "700",
                           }}
                         >
@@ -724,7 +724,7 @@ export default function StockPurchasesPage() {
                         <div
                           style={{
                             ...fieldStyle,
-                            background: "#eee",
+                            background: "var(--line)",
                             fontWeight: "700",
                           }}
                         >
@@ -741,7 +741,7 @@ export default function StockPurchasesPage() {
                 onClick={addItem}
                 style={{
                   padding: "12px 18px",
-                  border: "1px solid #ccc",
+                  border: "1px solid var(--line-strong)",
                   borderRadius: "8px",
                   background: "#fff",
                   fontWeight: "600",
@@ -757,7 +757,7 @@ export default function StockPurchasesPage() {
                 background: "#fff",
                 padding: "28px",
                 borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                boxShadow: "var(--shadow)",
               }}
             >
               <h2 style={{ marginTop: 0 }}>Supplier Discount</h2>
@@ -774,8 +774,8 @@ export default function StockPurchasesPage() {
                   <input id="supplier-discount" type="number" min="0" max={discountType === "percent" ? 100 : stockSubtotal} step="0.01" placeholder="0.00" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} style={fieldStyle} />
                 </div>
               </div>
-              <p style={{ color: "#666", lineHeight: 1.5 }}>Optional. Applies to the stock subtotal including VAT, before delivery. Enter prices before this discount; do not enter a discount already included in your item prices.</p>
-              {discount.error && <p role="alert" style={{ color: "#9b1c1c" }}>{discount.error}</p>}
+              <p style={{ color: "var(--muted)", lineHeight: 1.5 }}>Optional. Applies to the stock subtotal including VAT, before delivery. Enter prices before this discount; do not enter a discount already included in your item prices.</p>
+              {discount.error && <p role="alert" style={{ color: "#9b2c17" }}>{discount.error}</p>}
 
               <div
                 style={{
@@ -788,7 +788,7 @@ export default function StockPurchasesPage() {
                 }}
               >
                 <div>
-                  <div style={{ color: "#666", marginBottom: "5px" }}>
+                  <div style={{ color: "var(--muted)", marginBottom: "5px" }}>
                     Stock Before Discount
                   </div>
                   <div style={{ fontSize: "20px", fontWeight: "700" }}>
@@ -797,16 +797,16 @@ export default function StockPurchasesPage() {
                 </div>
 
                 <div>
-                  <div style={{ color: "#666", marginBottom: "5px" }}>Supplier Discount</div>
+                  <div style={{ color: "var(--muted)", marginBottom: "5px" }}>Supplier Discount</div>
                   <div style={{ fontSize: "20px", fontWeight: "700" }}>−£{discount.amount.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ color: "#666", marginBottom: "5px" }}>Stock After Discount</div>
+                  <div style={{ color: "var(--muted)", marginBottom: "5px" }}>Stock After Discount</div>
                   <div style={{ fontSize: "20px", fontWeight: "700" }}>£{discountedStockTotal.toFixed(2)}</div>
                 </div>
 
                 <div>
-                  <div style={{ color: "#666", marginBottom: "5px" }}>
+                  <div style={{ color: "var(--muted)", marginBottom: "5px" }}>
                     Delivery Fee
                   </div>
                   <div style={{ fontSize: "20px", fontWeight: "700" }}>
@@ -815,7 +815,7 @@ export default function StockPurchasesPage() {
                 </div>
 
                 <div>
-                  <div style={{ color: "#666", marginBottom: "5px" }}>
+                  <div style={{ color: "var(--muted)", marginBottom: "5px" }}>
                     Total Paid
                   </div>
                   <div
@@ -830,7 +830,7 @@ export default function StockPurchasesPage() {
 
                 <div
                   style={{
-                    color: "#666",
+                    color: "var(--muted)",
                     maxWidth: "520px",
                     fontSize: "14px",
                   }}
@@ -850,7 +850,7 @@ export default function StockPurchasesPage() {
                   padding: "16px",
                   border: "none",
                   borderRadius: "9px",
-                  background: saving ? "#777" : "#111",
+                  background: saving ? "var(--muted)" : "var(--ink)",
                   color: "#fff",
                   fontSize: "17px",
                   fontWeight: "700",

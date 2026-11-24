@@ -302,7 +302,7 @@ export default function AddJobPage() {
         <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
           Add New Job
         </h1>
-        <p style={{ color: "#666", margin: "0 0 28px" }}>
+        <p style={{ color: "var(--muted)", margin: "0 0 28px" }}>
           Record a new website, social media or in-person order.
         </p>
 
@@ -458,8 +458,8 @@ function Field({ label, children }) {
 
 function stockMessageStyle(type) {
   const colours = {
-    yes: { background: "#e8f7ed", color: "#176b35", border: "#b8dfc3" },
-    no: { background: "#fff0f0", color: "#9b1c1c", border: "#efb3b3" },
+    yes: { background: "#e8f7ed", color: "var(--leaf)", border: "#b8dfc3" },
+    no: { background: "var(--coral-soft)", color: "#9b2c17", border: "#efb3b3" },
     check: { background: "#fff8df", color: "#6b4e00", border: "#ead99f" },
     info: { background: "#eef4ff", color: "#254f87", border: "#c8d7ef" },
   };
@@ -476,15 +476,15 @@ function stockMessageStyle(type) {
   };
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "#333" };
-const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)", marginBottom: "20px" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
+const backLinkStyle = { display: "inline-block", marginBottom: "24px", color: "var(--text-2)" };
+const sectionStyle = { background: "#fff", padding: "26px", borderRadius: "14px", boxShadow: "var(--shadow)", marginBottom: "20px" };
 const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" };
 const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
-const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ccc", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const itemCardStyle = { border: "1px solid #e3e3e3", background: "#fafafa", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
-const primaryButtonStyle = { width: "100%", padding: "15px 20px", border: 0, borderRadius: "9px", background: "#111", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer" };
+const fieldStyle = { width: "100%", padding: "12px", border: "1px solid var(--line-strong)", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
+const itemCardStyle = { border: "1px solid #e3e3e3", background: "var(--surface-2)", borderRadius: "10px", padding: "18px", marginBottom: "16px" };
+const primaryButtonStyle = { width: "100%", padding: "15px 20px", border: 0, borderRadius: "9px", background: "var(--ink)", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer" };
 const secondaryButtonStyle = { padding: "11px 15px", border: "1px solid #aaa", borderRadius: "8px", background: "#fff", fontWeight: "700", cursor: "pointer" };
-const removeButtonStyle = { padding: "7px 10px", border: "1px solid #d3a0a0", borderRadius: "7px", background: "#fff", color: "#9b1c1c", fontWeight: "600", cursor: "pointer" };
-const helpTextStyle = { color: "#666", fontSize: "13px", marginTop: "6px" };
-const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "#fff0f0", color: "#9b1c1c", border: "1px solid #f1c1c1", fontWeight: "600" };
+const removeButtonStyle = { padding: "7px 10px", border: "1px solid #d3a0a0", borderRadius: "7px", background: "#fff", color: "#9b2c17", fontWeight: "600", cursor: "pointer" };
+const helpTextStyle = { color: "var(--muted)", fontSize: "13px", marginTop: "6px" };
+const errorStyle = { padding: "14px 16px", marginBottom: "16px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };

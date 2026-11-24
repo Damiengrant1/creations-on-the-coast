@@ -142,9 +142,9 @@ export default function ProductsPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div
@@ -158,10 +158,10 @@ export default function ProductsPage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
-          ← Back to Dashboard
+          ← Home
         </Link>
 
         <div
@@ -187,7 +187,7 @@ export default function ProductsPage() {
 
             <p
               style={{
-                color: "#666",
+                color: "var(--muted)",
                 margin: 0,
               }}
             >
@@ -199,7 +199,7 @@ export default function ProductsPage() {
             <Link
               href="/products/new"
               style={{
-                background: "#111",
+                background: "var(--ink)",
                 color: "#fff",
                 textDecoration: "none",
                 padding: "13px 18px",
@@ -252,7 +252,7 @@ export default function ProductsPage() {
             background: "#fff",
             padding: "18px",
             borderRadius: "12px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow)",
             marginBottom: "16px",
           }}
         >
@@ -285,7 +285,7 @@ export default function ProductsPage() {
               style={{
                 width: "100%",
                 padding: "12px 14px",
-                border: "1px solid #ccc",
+                border: "1px solid var(--line-strong)",
                 borderRadius: "8px",
                 fontSize: "16px",
               }}
@@ -297,7 +297,7 @@ export default function ProductsPage() {
                 onClick={() => setSearchTerm("")}
                 style={{
                   padding: "12px 16px",
-                  border: "1px solid #ccc",
+                  border: "1px solid var(--line-strong)",
                   borderRadius: "8px",
                   background: "#fff",
                   cursor: "pointer",
@@ -314,7 +314,7 @@ export default function ProductsPage() {
             <div
               style={{
                 marginTop: "9px",
-                color: "#666",
+                color: "var(--muted)",
                 fontSize: "14px",
               }}
             >
@@ -331,7 +331,7 @@ export default function ProductsPage() {
           style={{
             background: "#fff",
             borderRadius: "14px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow)",
             overflowX: "auto",
           }}
         >
@@ -363,7 +363,7 @@ export default function ProductsPage() {
                 <tr
                   style={{
                     textAlign: "left",
-                    background: "#fafafa",
+                    background: "var(--surface-2)",
                   }}
                 >
                   <Th>Product</Th>
@@ -403,7 +403,7 @@ export default function ProductsPage() {
                     <tr
                       key={product.product_id}
                       style={{
-                        borderTop: "1px solid #eee",
+                        borderTop: "1px solid var(--line)",
                       }}
                     >
                       <Td>
@@ -503,9 +503,9 @@ export default function ProductsPage() {
                               style={{
                                 display: "inline-block",
                                 padding: "8px 11px",
-                                border: "1px solid #ccc",
+                                border: "1px solid var(--line-strong)",
                                 borderRadius: "7px",
-                                color: "#111",
+                                color: "var(--ink)",
                                 textDecoration: "none",
                                 fontWeight: "600",
                                 whiteSpace: "nowrap",
@@ -519,9 +519,9 @@ export default function ProductsPage() {
                               style={{
                                 display: "inline-block",
                                 padding: "8px 11px",
-                                border: "1px solid #ccc",
+                                border: "1px solid var(--line-strong)",
                                 borderRadius: "7px",
-                                color: "#111",
+                                color: "var(--ink)",
                                 textDecoration: "none",
                                 fontWeight: "600",
                                 whiteSpace: "nowrap",
@@ -543,7 +543,7 @@ export default function ProductsPage() {
         <div
           style={{
             marginTop: "16px",
-            color: "#666",
+            color: "var(--muted)",
             fontSize: "13px",
           }}
         >
@@ -564,12 +564,12 @@ function SummaryCard({ title, value }) {
         background: "#fff",
         padding: "22px",
         borderRadius: "12px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+        boxShadow: "var(--shadow)",
       }}
     >
       <div
         style={{
-          color: "#666",
+          color: "var(--muted)",
           marginBottom: "8px",
         }}
       >

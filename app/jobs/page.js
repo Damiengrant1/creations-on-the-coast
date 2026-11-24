@@ -3,72 +3,72 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { useAccess } from "../AuthGate";
+import {
+  BOARD_COLUMNS,
+  CLOSED_STATUSES,
+  NEXT_STEP,
+  PAYMENT_LABELS,
+  SOURCE_LABELS,
+  STATUSES,
+  STATUS_LABELS,
+  displayDate,
+  friendlyDue,
+  localDateString,
+  needsPayment,
+  paymentTone,
+  statusTone,
+} from "../../lib/jobStages";
 
-const STATUSES = [
-  ["new", "New"],
-  ["artwork_information_needed", "Artwork/Information Needed"],
-  ["awaiting_customer_approval", "Awaiting Customer Approval"],
-  ["awaiting_stock_order", "Awaiting Stock Order"],
-  ["awaiting_stock_delivery", "Awaiting Stock Delivery"],
-  ["ready_to_produce", "Ready to Produce"],
-  ["in_production", "In Production"],
-  ["ready_for_collection_postage", "Ready for Collection/Postage"],
-  ["completed", "Completed"],
-  ["cancelled", "Cancelled"],
-];
-
-const STATUS_LABELS = Object.fromEntries(STATUSES);
-const CLOSED_STATUSES = new Set(["completed", "cancelled"]);
-
-const SOURCE_LABELS = {
-  website: "Website",
-  facebook: "Facebook",
-  whatsapp: "WhatsApp",
-  in_person: "In Person",
-  other: "Other",
-};
-
-const PAYMENT_LABELS = {
-  unpaid: "Unpaid",
-  deposit_paid: "Deposit Paid",
-  paid: "Paid",
-  refunded: "Refunded",
-};
-
-function localDateString(date = new Date()) {
-  const offset = date.getTimezoneOffset();
-  return new Date(date.getTime() - offset * 60000)
-    .toISOString()
-    .slice(0, 10);
-}
-
-function displayDate(value) {
-  if (!value) return "No deadline";
-  const [year, month, day] = value.split("-");
-  return `${day}/${month}/${year}`;
-}
+const VIEW_KEY = "coast-jobs-view";
 
 function money(value) {
-  return value === null || value === undefined
-    ? "—"
-    : `£${Number(value).toFixed(2)}`;
+  return value === null || value === undefined ? "—" : `£${Number(value).toFixed(2)}`;
+}
+
+function itemsSummary(job) {
+  const items = job.job_items || [];
+  if (items.length === 0) return "No items yet";
+  return items.map((item) => `${item.quantity}× ${item.item_description}`).join(", ");
 }
 
 export default function JobsPage() {
-  const { isAdmin } = useAccess();
   const [jobs, setJobs] = useState([]);
   const [products, setProducts] = useState([]);
   const [stockLevels, setStockLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [quickFilter, setQuickFilter] = useState("all"); // all | overdue | week | payment
+  const [stageFilter, setStageFilter] = useState("");
+  const [view, setView] = useState("board");
+  const [showClosed, setShowClosed] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const filter = params.get("filter");
+    if (["overdue", "week", "payment"].includes(filter)) setQuickFilter(filter);
+    if (filter === "payment") setShowClosed(true);
+    const stage = params.get("stage");
+    if (BOARD_COLUMNS.some((column) => column.key === stage)) setStageFilter(stage);
+    try {
+      const saved = window.localStorage.getItem(VIEW_KEY);
+      if (saved === "board" || saved === "list") setView(saved);
+      else if (window.innerWidth < 700) setView("list");
+    } catch {
+      // storage unavailable: keep the default view
+    }
     loadJobs();
   }, []);
+
+  function chooseView(next) {
+    setView(next);
+    try {
+      window.localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      // ignore
+    }
+  }
 
   async function loadJobs() {
     setLoading(true);
@@ -86,15 +86,12 @@ export default function JobsPage() {
       supabase.from("current_stock").select("product_id, current_stock"),
     ]);
 
-    const firstError =
-      jobsResult.error || productsResult.error || stockResult.error;
+    const firstError = jobsResult.error || productsResult.error || stockResult.error;
 
     if (firstError) {
       console.error("Jobs error:", firstError);
       setMessage(`Could not load jobs: ${firstError.message}`);
       setJobs([]);
-      setProducts([]);
-      setStockLevels([]);
     } else {
       setJobs(jobsResult.data || []);
       setProducts(productsResult.data || []);
@@ -111,200 +108,108 @@ export default function JobsPage() {
     const updates = {
       status,
       updated_at: new Date().toISOString(),
-      completed_at:
-        status === "completed" ? new Date().toISOString() : null,
+      completed_at: status === "completed" ? new Date().toISOString() : null,
     };
 
-    const { error } = await supabase
-      .from("jobs")
-      .update(updates)
-      .eq("id", jobId);
+    const { error } = await supabase.from("jobs").update(updates).eq("id", jobId);
 
     if (error) {
       console.error("Status update error:", error);
       setMessage(`Could not update job: ${error.message}`);
     } else {
-      setJobs((currentJobs) =>
-        currentJobs.map((job) =>
-          job.id === jobId ? { ...job, ...updates } : job
-        )
-      );
+      setJobs((current) => current.map((job) => (job.id === jobId ? { ...job, ...updates } : job)));
     }
 
     setUpdatingId("");
   }
 
   const today = localDateString();
-  const inSevenDays = localDateString(
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  );
 
-  const productMap = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products]
-  );
-
+  // ---- Stock check: give stock to the oldest jobs first ----
+  const productMap = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const stockMap = useMemo(
-    () =>
-      new Map(
-        stockLevels.map((stock) => [
-          stock.product_id,
-          Number(stock.current_stock || 0),
-        ])
-      ),
+    () => new Map(stockLevels.map((stock) => [stock.product_id, Number(stock.current_stock || 0)])),
     [stockLevels]
   );
 
   const stockStatusByJob = useMemo(() => {
     const statuses = new Map();
     const allocatedByProduct = new Map();
-
-    const activeUnpaidJobs = jobs
+    const waiting = jobs
       .filter((job) => !job.sale_id && !CLOSED_STATUSES.has(job.status))
       .sort((a, b) => {
-        const firstDate = a.received_date || a.created_at || "";
-        const secondDate = b.received_date || b.created_at || "";
-
-        if (firstDate !== secondDate) return firstDate.localeCompare(secondDate);
+        const first = a.received_date || a.created_at || "";
+        const second = b.received_date || b.created_at || "";
+        if (first !== second) return first.localeCompare(second);
         return String(a.created_at || "").localeCompare(String(b.created_at || ""));
       });
 
-    activeUnpaidJobs.forEach((job) => {
-      const requiredByProduct = new Map();
+    waiting.forEach((job) => {
+      const required = new Map();
       let hasUnlinkedItem = false;
 
       (job.job_items || []).forEach((item) => {
-        if (!item.product_id) {
-          hasUnlinkedItem = true;
-          return;
-        }
-
-        const product = productMap.get(item.product_id);
+        const product = item.product_id ? productMap.get(item.product_id) : null;
         if (!product) {
           hasUnlinkedItem = true;
           return;
         }
-
         if (product.track_stock) {
-          requiredByProduct.set(
-            item.product_id,
-            (requiredByProduct.get(item.product_id) || 0) + Number(item.quantity || 0)
-          );
+          required.set(item.product_id, (required.get(item.product_id) || 0) + Number(item.quantity || 0));
         }
       });
 
-      const shortages = [];
-
-      requiredByProduct.forEach((requiredQuantity, productId) => {
-        const physicalQuantity = stockMap.get(productId) || 0;
-        const alreadyAllocated = allocatedByProduct.get(productId) || 0;
-        const availableForThisJob = Math.max(0, physicalQuantity - alreadyAllocated);
-
-        if (availableForThisJob < requiredQuantity) {
-          shortages.push(requiredQuantity - availableForThisJob);
-        }
+      let short = false;
+      required.forEach((quantity, productId) => {
+        const available = Math.max(0, (stockMap.get(productId) || 0) - (allocatedByProduct.get(productId) || 0));
+        if (available < quantity) short = true;
       });
 
-      if (shortages.length > 0) {
-        statuses.set(job.id, {
-          label: "No",
-          type: "no",
-          title: "Earlier active jobs have reserved the available stock. This job needs additional stock ordering.",
-        });
+      if (short) {
+        statuses.set(job.id, { label: "Stock needed", tone: "coral", title: "Earlier jobs have used the stock on hand. Order more for this job." });
       } else if (hasUnlinkedItem) {
-        statuses.set(job.id, {
-          label: "Check",
-          type: "check",
-          title: "At least one item is not linked to a product",
-        });
+        statuses.set(job.id, { label: "Check stock", tone: "sun", title: "At least one item isn't linked to a product, so stock can't be checked." });
       } else {
-        statuses.set(job.id, {
-          label: "Yes",
-          type: "yes",
-          title: "Stock is available after allocating it to earlier active jobs first",
-        });
+        statuses.set(job.id, { label: "Stock ready", tone: "leaf", title: "Stock is available after earlier jobs have had theirs." });
       }
 
-      requiredByProduct.forEach((requiredQuantity, productId) => {
-        allocatedByProduct.set(
-          productId,
-          (allocatedByProduct.get(productId) || 0) + requiredQuantity
-        );
+      required.forEach((quantity, productId) => {
+        allocatedByProduct.set(productId, (allocatedByProduct.get(productId) || 0) + quantity);
       });
     });
 
     return statuses;
   }, [jobs, productMap, stockMap]);
 
-  function getStockStatus(job) {
-    if (job.sale_id) {
-      return { label: "Deducted", type: "check", title: "Stock was already deducted by this job's sale. It is not deducted again when the job is completed." };
-    }
-
-    if (job.status === "cancelled") {
-      return { label: "Released", type: "check", title: "Cancelled jobs do not reserve stock." };
-    }
-
-    if (job.status === "completed") {
-      return { label: "Complete", type: "check", title: "Completed jobs do not reserve stock." };
-    }
-
-    if ((job.job_items || []).length === 0) {
-      return { label: "Check", type: "check", title: "No job items" };
-    }
-
-    return stockStatusByJob.get(job.id) || {
-      label: "Check",
-      type: "check",
-      title: "Could not calculate stock availability",
-    };
+  function stockStatus(job) {
+    if (job.sale_id) return { label: "Stock taken", tone: "", title: "Stock came off when this job was recorded as a sale." };
+    if (CLOSED_STATUSES.has(job.status)) return null;
+    if ((job.job_items || []).length === 0) return { label: "No items", tone: "sun", title: "Add the items to this job." };
+    return stockStatusByJob.get(job.id) || null;
   }
 
-  const summary = useMemo(() => {
-    const activeJobs = jobs.filter(
-      (job) => !CLOSED_STATUSES.has(job.status)
-    );
-
-    return {
-      active: activeJobs.length,
-      overdue: activeJobs.filter(
-        (job) => job.due_date && job.due_date < today
-      ).length,
-      dueSoon: activeJobs.filter(
-        (job) =>
-          job.due_date &&
-          job.due_date >= today &&
-          job.due_date <= inSevenDays
-      ).length,
-      stockOrder: activeJobs.filter(
-        (job) => job.status === "awaiting_stock_order"
-      ).length,
-      stockDelivery: activeJobs.filter(
-        (job) => job.status === "awaiting_stock_delivery"
-      ).length,
-    };
-  }, [jobs, today, inSevenDays]);
-
+  // ---- Filtering ----
   const filteredJobs = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
+    const stage = BOARD_COLUMNS.find((column) => column.key === stageFilter);
 
     return jobs.filter((job) => {
-      const statusMatches =
-        statusFilter === "all" ||
-        (statusFilter === "active"
-          ? !CLOSED_STATUSES.has(job.status)
-          : job.status === statusFilter);
-
-      if (!statusMatches) return false;
+      const closed = CLOSED_STATUSES.has(job.status);
+      if (quickFilter === "payment") {
+        if (!needsPayment(job)) return false;
+      } else if (closed && !showClosed) {
+        return false;
+      }
+      if (quickFilter === "overdue" && !(job.due_date && job.due_date < today && !closed)) return false;
+      if (quickFilter === "week") {
+        if (!job.due_date || closed) return false;
+        const days = Math.round((new Date(job.due_date) - new Date(today)) / 86400000);
+        if (days < 0 || days > 7) return false;
+      }
+      if (stage && !stage.statuses.includes(job.status)) return false;
       if (!search) return true;
 
-      const itemText = (job.job_items || [])
-        .map(
-          (item) =>
-            `${item.item_description} ${item.personalisation || ""}`
-        )
-        .join(" ");
-
+      const itemText = (job.job_items || []).map((item) => `${item.item_description} ${item.personalisation || ""}`).join(" ");
       return [
         job.job_number,
         job.customer_name,
@@ -315,394 +220,243 @@ export default function JobsPage() {
         job.notes,
         job.artwork_details,
         itemText,
-      ].some((value) =>
-        String(value || "").toLowerCase().includes(search)
-      );
+      ].some((value) => String(value || "").toLowerCase().includes(search));
     });
-  }, [jobs, searchTerm, statusFilter]);
+  }, [jobs, searchTerm, quickFilter, stageFilter, showClosed, today]);
+
+  const counts = useMemo(() => {
+    const active = jobs.filter((job) => !CLOSED_STATUSES.has(job.status));
+    return {
+      active: active.length,
+      overdue: active.filter((job) => job.due_date && job.due_date < today).length,
+      week: active.filter((job) => {
+        if (!job.due_date) return false;
+        const days = Math.round((new Date(job.due_date) - new Date(today)) / 86400000);
+        return days >= 0 && days <= 7;
+      }).length,
+      payment: jobs.filter(needsPayment).length,
+    };
+  }, [jobs, today]);
+
+  const closedJobs = filteredJobs.filter((job) => CLOSED_STATUSES.has(job.status));
+
+  function clearFilters() {
+    setQuickFilter("all");
+    setStageFilter("");
+    setSearchTerm("");
+    window.history.replaceState(null, "", "/jobs");
+  }
+
+  const filtersOn = quickFilter !== "all" || stageFilter || searchTerm;
 
   return (
-    <main style={pageStyle}>
-      <div style={{ maxWidth: "1500px", margin: "0 auto" }}>
-        <Link href="/" style={backLinkStyle}>
-          ← Back to Dashboard
-        </Link>
-
-        <div style={headingRowStyle}>
-          <div>
-            <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>
-              Jobs
-            </h1>
-            <p style={{ color: "#666", margin: 0 }}>
-              Track every order from enquiry through to completion.
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <Link href="/jobs/stock-order" style={secondaryLinkStyle}>
-              Create Stock Order
-            </Link>
-            {isAdmin && (
-              <Link href="/jobs/new" style={primaryLinkStyle}>
-                + Add New Job
-              </Link>
-            )}
-          </div>
+    <main className="page" style={{ maxWidth: 1700 }}>
+      <div className="page-head">
+        <div>
+          <h1>Jobs</h1>
+          <p>Every order from first message to collected. Tap the green button to move a job on.</p>
         </div>
-
-        <div style={summaryGridStyle}>
-          <SummaryCard title="Active Jobs" value={summary.active} />
-          <SummaryCard title="Overdue" value={summary.overdue} alert={summary.overdue > 0} />
-          <SummaryCard title="Due Within 7 Days" value={summary.dueSoon} />
-          <SummaryCard title="Awaiting Stock Order" value={summary.stockOrder} alert={summary.stockOrder > 0} />
-          <SummaryCard title="Awaiting Stock Delivery" value={summary.stockDelivery} />
-        </div>
-
-        <div style={filterPanelStyle}>
-          <div style={{ flex: "1 1 340px" }}>
-            <label htmlFor="job-search" style={labelStyle}>
-              Search Jobs
-            </label>
-            <input
-              id="job-search"
-              type="search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search job number, customer, item or notes"
-              style={fieldStyle}
-            />
-          </div>
-
-          <div style={{ flex: "0 1 300px" }}>
-            <label htmlFor="status-filter" style={labelStyle}>
-              Show
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              style={fieldStyle}
-            >
-              <option value="active">All Active Jobs</option>
-              <option value="all">All Jobs</option>
-              {STATUSES.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {message && <div style={errorStyle}>{message}</div>}
-
-        <div style={tablePanelStyle}>
-          {loading ? (
-            <div style={{ padding: "28px" }}>Loading jobs...</div>
-          ) : filteredJobs.length === 0 ? (
-            <div style={{ padding: "28px" }}>
-              {jobs.length === 0
-                ? "No jobs have been added yet."
-                : "No jobs match your search or filter."}
-            </div>
-          ) : (
-            <table style={tableStyle}>
-              <thead>
-                <tr style={{ textAlign: "left", background: "#fafafa" }}>
-                  <Th>Job</Th>
-                  <Th>Customer</Th>
-                  <Th>Items</Th>
-                  <Th>Received</Th>
-                  <Th>Due</Th>
-                  <Th>Source</Th>
-                  <Th>Priority</Th>
-                  <Th>Stock Ready?</Th>
-                  <Th>Payment</Th>
-                  <Th>Value</Th>
-                  <Th>Status</Th>
-                  {isAdmin && <Th>Actions</Th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredJobs.map((job) => {
-                  const isActive = !CLOSED_STATUSES.has(job.status);
-                  const isOverdue =
-                    isActive && job.due_date && job.due_date < today;
-                  const stockStatus = getStockStatus(job);
-
-                  return (
-                    <tr
-                      key={job.id}
-                      style={{
-                        borderTop: "1px solid #eee",
-                        background: isOverdue ? "#fff4f4" : "#fff",
-                      }}
-                    >
-                      <Td>
-                        <strong>#{job.job_number}</strong>
-                      </Td>
-                      <Td>
-                        <strong>{job.customer_name}</strong>
-                        {(job.customer_phone || job.customer_email) && (
-                          <div style={subTextStyle}>
-                            {job.customer_phone || job.customer_email}
-                          </div>
-                        )}
-                      </Td>
-                      <Td>
-                        {(job.job_items || []).map((item) => (
-                          <div key={item.id} style={{ marginBottom: "4px" }}>
-                            {item.quantity} × {item.item_description}
-                            {item.personalisation && (
-                              <div style={subTextStyle}>
-                                {item.personalisation}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </Td>
-                      <Td>{displayDate(job.received_date)}</Td>
-                      <Td>
-                        <span
-                          style={{
-                            color: isOverdue ? "#a40000" : "inherit",
-                            fontWeight: isOverdue ? "700" : "400",
-                          }}
-                        >
-                          {displayDate(job.due_date)}
-                          {isOverdue ? " — OVERDUE" : ""}
-                        </span>
-                      </Td>
-                      <Td>{SOURCE_LABELS[job.source] || job.source}</Td>
-                      <Td>
-                        <span style={priorityStyle(job.priority)}>
-                          {job.priority.charAt(0).toUpperCase() + job.priority.slice(1)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <span
-                          title={stockStatus.title}
-                          style={stockStatusStyle(stockStatus.type)}
-                        >
-                          {stockStatus.label}
-                        </span>
-                      </Td>
-                      <Td>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</Td>
-                      <Td>{money(job.quoted_total)}</Td>
-                      <Td>
-                        {isAdmin ? (
-                          <select
-                            value={job.status}
-                            onChange={(event) =>
-                              changeStatus(job.id, event.target.value)
-                            }
-                            disabled={updatingId === job.id}
-                            style={{ ...fieldStyle, minWidth: "230px" }}
-                          >
-                            {STATUSES.map(([value, label]) => (
-                              <option key={value} value={value}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span style={priorityStyle("normal")}>
-                            {STATUS_LABELS[job.status] || job.status}
-                          </span>
-                        )}
-                      </Td>
-                      {isAdmin && (
-                        <Td>
-                          <Link href={`/jobs/edit/${job.id}`} style={editLinkStyle}>
-                            {job.sale_id ? "View" : "Edit"}
-                          </Link>
-                        </Td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <Link href="/jobs/stock-order" className="btn ghost">📦 Stock order</Link>
+          <Link href="/jobs/new" className="btn sea">➕ New job</Link>
         </div>
       </div>
+
+      <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 16, padding: 14 }}>
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search name, job number, item, notes…"
+          aria-label="Search jobs"
+          style={{ flex: "1 1 260px", padding: "11px 12px", border: "1px solid var(--line-strong)", borderRadius: 10, fontSize: 15 }}
+        />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <FilterChip on={quickFilter === "all"} onClick={() => setQuickFilter("all")}>All active · {counts.active}</FilterChip>
+          <FilterChip on={quickFilter === "overdue"} tone="coral" onClick={() => setQuickFilter("overdue")}>Overdue · {counts.overdue}</FilterChip>
+          <FilterChip on={quickFilter === "week"} tone="sun" onClick={() => setQuickFilter("week")}>Due this week · {counts.week}</FilterChip>
+          <FilterChip on={quickFilter === "payment"} tone="coral" onClick={() => setQuickFilter("payment")}>Needs payment · {counts.payment}</FilterChip>
+        </div>
+        <div className="segmented" role="group" aria-label="View">
+          <button type="button" className={view === "board" ? "on" : ""} onClick={() => chooseView("board")}>Board</button>
+          <button type="button" className={view === "list" ? "on" : ""} onClick={() => chooseView("list")}>List</button>
+        </div>
+      </div>
+
+      {(filtersOn || stageFilter) && (
+        <div style={{ marginBottom: 12, color: "var(--muted)", fontSize: 14 }}>
+          Showing {filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}
+          {stageFilter && ` in “${BOARD_COLUMNS.find((c) => c.key === stageFilter)?.title}”`}.{" "}
+          <button type="button" className="btn small ghost" onClick={clearFilters}>Clear filters</button>
+        </div>
+      )}
+
+      {quickFilter === "payment" && (
+        <div className="notice">
+          These jobs are marked completed but were never recorded as a sale, so the money isn&apos;t in the figures or the stock count. Open each one and use <strong>Take payment</strong> at the bottom.
+        </div>
+      )}
+
+      {message && <div className="notice error">{message}</div>}
+
+      {loading ? (
+        <div className="card">Loading jobs…</div>
+      ) : view === "board" && quickFilter !== "payment" ? (
+        <div className="board">
+          {BOARD_COLUMNS.filter((column) => !stageFilter || column.key === stageFilter).map((column) => {
+            const columnJobs = filteredJobs.filter((job) => column.statuses.includes(job.status));
+            return (
+              <section key={column.key} className="board-col">
+                <div className="board-col-head">
+                  <div>
+                    {column.title}
+                    <small>{column.hint}</small>
+                  </div>
+                  <span className="count">{columnJobs.length}</span>
+                </div>
+                {columnJobs.length === 0 && <div style={{ color: "var(--muted)", fontSize: 13, padding: "4px 6px 10px" }}>Nothing here</div>}
+                {columnJobs.map((job) => (
+                  <JobCard key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+                ))}
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="list-rows">
+          {filteredJobs.length === 0 && (
+            <div className="card">{jobs.length === 0 ? "No jobs yet. Add your first one with New job." : "No jobs match. Try clearing the filters."}</div>
+          )}
+          {filteredJobs.filter((job) => quickFilter === "payment" || !CLOSED_STATUSES.has(job.status)).map((job) => (
+            <JobRow key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+          ))}
+        </div>
+      )}
+
+      {quickFilter !== "payment" && (
+        <div style={{ marginTop: 26 }}>
+          <button type="button" className="btn ghost small" onClick={() => setShowClosed((value) => !value)}>
+            {showClosed ? "Hide" : "Show"} completed & cancelled jobs
+          </button>
+          {showClosed && (
+            <div className="list-rows" style={{ marginTop: 12 }}>
+              {closedJobs.length === 0 && <div className="card">None to show.</div>}
+              {closedJobs.map((job) => (
+                <JobRow key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
 
-function SummaryCard({ title, value, alert = false }) {
+function FilterChip({ on, tone = "", onClick, children }) {
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      className={`pill ${on ? "" : tone}`}
       style={{
-        background: alert ? "#fff0f0" : "#fff",
-        padding: "20px",
-        borderRadius: "12px",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-        border: alert ? "1px solid #efb3b3" : "1px solid transparent",
+        border: on ? "1px solid var(--ink)" : "1px solid transparent",
+        background: on ? "var(--ink)" : undefined,
+        color: on ? "#fff" : undefined,
+        padding: "8px 12px",
+        fontSize: 13,
+        cursor: "pointer",
       }}
     >
-      <div style={{ color: alert ? "#9b1c1c" : "#666", marginBottom: "8px", fontSize: "14px" }}>
-        {title}
-      </div>
-      <div style={{ fontSize: "28px", fontWeight: "700" }}>{value}</div>
-    </div>
+      {children}
+    </button>
   );
 }
 
-function Th({ children }) {
-  return <th style={{ padding: "14px", fontSize: "14px", whiteSpace: "nowrap" }}>{children}</th>;
+// The main "move it on" control. Finishing a job that hasn't been paid for sends you to take payment first.
+function NextStep({ job, busy, onMove }) {
+  if (needsPayment(job)) {
+    return <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--coral)" }}>💷 Take payment</Link>;
+  }
+  const next = NEXT_STEP[job.status];
+  if (!next) return null;
+  if (next.to === "completed" && !job.sale_id) {
+    return <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--leaf)" }}>💷 Take payment & finish</Link>;
+  }
+  return (
+    <button type="button" className="btn small" style={{ background: "var(--leaf)" }} disabled={busy} onClick={() => onMove(job.id, next.to)}>
+      {busy ? "Saving…" : `✓ ${next.label}`}
+    </button>
+  );
 }
 
-function Td({ children }) {
-  return <td style={{ padding: "14px", fontSize: "14px", verticalAlign: "top" }}>{children}</td>;
+function MoveSelect({ job, busy, onMove }) {
+  return (
+    <select
+      aria-label={`Move job ${job.job_number}`}
+      value={job.status}
+      disabled={busy}
+      onChange={(event) => onMove(job.id, event.target.value)}
+      style={{ border: "1px solid var(--line-strong)", borderRadius: 8, padding: "6px 6px", fontSize: 12.5, background: "#fff", maxWidth: 130 }}
+    >
+      {STATUSES.map(([value, label]) => (
+        <option key={value} value={value}>{value === job.status ? "Move to another stage…" : label}</option>
+      ))}
+    </select>
+  );
 }
 
-function priorityStyle(priority) {
-  const colours = {
-    normal: { background: "#f1f1f1", color: "#333" },
-    high: { background: "#fff2cc", color: "#744c00" },
-    urgent: { background: "#ffe0e0", color: "#9b1c1c" },
-  };
-
-  return {
-    ...(colours[priority] || colours.normal),
-    display: "inline-block",
-    padding: "5px 8px",
-    borderRadius: "6px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
-  };
+function JobCard({ job, today, stock, busy, onMove }) {
+  const due = friendlyDue(job.due_date, today);
+  const overdue = due.tone === "coral";
+  const soon = due.tone === "sun";
+  return (
+    <article className={`job-card${overdue ? " overdue" : soon ? " soon" : ""}`}>
+      <div className="job-card-top">
+        <Link href={`/jobs/edit/${job.id}`}>#{job.job_number}</Link>
+        <span className={`pill ${due.tone}`}>{due.text}</span>
+      </div>
+      <div className="customer">{job.customer_name}</div>
+      <div className="items">{itemsSummary(job)}</div>
+      <div className="meta">
+        <span className={`pill ${statusTone(job.status)}`}>{STATUS_LABELS[job.status]}</span>
+        <span className={`pill ${paymentTone(job.payment_status)}`}>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</span>
+        {stock && <span className={`pill ${stock.tone}`} title={stock.title}>{stock.label}</span>}
+        {job.priority && job.priority !== "normal" && <span className="pill coral">{job.priority === "urgent" ? "Urgent" : "High priority"}</span>}
+      </div>
+      <div className="actions">
+        <NextStep job={job} busy={busy} onMove={onMove} />
+        <MoveSelect job={job} busy={busy} onMove={onMove} />
+      </div>
+    </article>
+  );
 }
 
-function stockStatusStyle(type) {
-  const colours = {
-    yes: { background: "#dff5e6", color: "#176b35" },
-    no: { background: "#ffe0e0", color: "#9b1c1c" },
-    check: { background: "#fff2cc", color: "#744c00" },
-  };
-
-  return {
-    ...(colours[type] || colours.check),
-    display: "inline-block",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
-  };
+function JobRow({ job, today, stock, busy, onMove }) {
+  const due = friendlyDue(job.due_date, today);
+  const closed = CLOSED_STATUSES.has(job.status);
+  return (
+    <div className="list-row" style={{ flexWrap: "wrap", borderLeft: due.tone === "coral" && !closed ? "4px solid var(--coral)" : undefined }}>
+      <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+        <Link href={`/jobs/edit/${job.id}`} style={{ textDecoration: "none" }}>
+          <strong>#{job.job_number} · {job.customer_name}</strong>
+        </Link>
+        <div className="sub">{itemsSummary(job)}</div>
+        <div className="sub">
+          {SOURCE_LABELS[job.source] || job.source} · received {displayDate(job.received_date)} · {money(job.quoted_total)}
+          {job.customer_phone ? ` · ${job.customer_phone}` : ""}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+        {!closed && <span className={`pill ${due.tone}`}>{due.text}</span>}
+        <span className={`pill ${statusTone(job.status)}`}>{STATUS_LABELS[job.status]}</span>
+        <span className={`pill ${paymentTone(job.payment_status)}`}>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</span>
+        {stock && <span className={`pill ${stock.tone}`} title={stock.title}>{stock.label}</span>}
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <NextStep job={job} busy={busy} onMove={onMove} />
+        <MoveSelect job={job} busy={busy} onMove={onMove} />
+        <Link href={`/jobs/edit/${job.id}`} className="btn small ghost">{job.sale_id ? "View" : "Edit"}</Link>
+      </div>
+    </div>
+  );
 }
-
-const pageStyle = {
-  minHeight: "100vh",
-  background: "#f7f7f8",
-  padding: "40px 20px",
-  fontFamily: "Arial, sans-serif",
-};
-
-const backLinkStyle = {
-  display: "inline-block",
-  marginBottom: "24px",
-  color: "#333",
-};
-
-const headingRowStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: "16px",
-  alignItems: "center",
-  flexWrap: "wrap",
-  marginBottom: "24px",
-};
-
-const secondaryLinkStyle = {
-  background: "#fff",
-  color: "#111",
-  textDecoration: "none",
-  padding: "12px 17px",
-  borderRadius: "9px",
-  border: "1px solid #aaa",
-  fontWeight: "700",
-};
-
-const primaryLinkStyle = {
-  background: "#111",
-  color: "#fff",
-  textDecoration: "none",
-  padding: "13px 18px",
-  borderRadius: "9px",
-  fontWeight: "700",
-};
-
-const summaryGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-  gap: "16px",
-  marginBottom: "20px",
-};
-
-const filterPanelStyle = {
-  background: "#fff",
-  padding: "18px",
-  borderRadius: "12px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-  marginBottom: "16px",
-  display: "flex",
-  gap: "16px",
-  flexWrap: "wrap",
-  alignItems: "end",
-};
-
-const labelStyle = {
-  display: "block",
-  fontWeight: "600",
-  marginBottom: "6px",
-};
-
-const fieldStyle = {
-  width: "100%",
-  padding: "11px 12px",
-  border: "1px solid #ccc",
-  borderRadius: "8px",
-  fontSize: "15px",
-  boxSizing: "border-box",
-  background: "#fff",
-};
-
-const errorStyle = {
-  padding: "14px 16px",
-  marginBottom: "16px",
-  borderRadius: "9px",
-  background: "#fff0f0",
-  color: "#9b1c1c",
-  border: "1px solid #f1c1c1",
-  fontWeight: "600",
-};
-
-const tablePanelStyle = {
-  background: "#fff",
-  borderRadius: "14px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-  overflowX: "auto",
-};
-
-const tableStyle = {
-  width: "100%",
-  borderCollapse: "collapse",
-  minWidth: "1650px",
-};
-
-const editLinkStyle = {
-  display: "inline-block",
-  color: "#111",
-  textDecoration: "none",
-  padding: "10px 14px",
-  borderRadius: "8px",
-  border: "1px solid #aaa",
-  fontWeight: "700",
-  whiteSpace: "nowrap",
-};
-
-const subTextStyle = {
-  color: "#666",
-  fontSize: "12px",
-  marginTop: "3px",
-};

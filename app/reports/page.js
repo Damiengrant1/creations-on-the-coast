@@ -236,11 +236,11 @@ export default function ReportsPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "#333" }}>← Back to Dashboard</Link>
+        <Link href="/" style={{ display: "inline-block", marginBottom: "24px", color: "var(--text-2)" }}>← Home</Link>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "18px", flexWrap: "wrap", alignItems: "flex-end", marginBottom: "24px" }}>
           <div>
             <h1 style={{ fontSize: "36px", margin: "0 0 8px" }}>Reports & Profitability</h1>
-            <p style={{ color: "#666", margin: 0 }}>Review business performance for any date range.</p>
+            <p style={{ color: "var(--muted)", margin: 0 }}>Review business performance for any date range.</p>
           </div>
           <button type="button" onClick={exportCsv} disabled={loading || !!error} style={buttonStyle}>Download CSV</button>
         </div>
@@ -250,7 +250,7 @@ export default function ReportsPage() {
             <Field label="From"><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} style={fieldStyle} /></Field>
             <Field label="To"><input type="date" value={toDate} min={fromDate} onChange={(e) => setToDate(e.target.value)} style={fieldStyle} /></Field>
           </div>
-          <div style={{ color: "#666", fontSize: "13px", fontWeight: "600", marginBottom: "9px" }}>Quick dates</div>
+          <div style={{ color: "var(--muted)", fontSize: "13px", fontWeight: "600", marginBottom: "9px" }}>Quick dates</div>
           <div style={{ display: "flex", gap: "9px", flexWrap: "wrap" }}>
             <Shortcut onClick={() => applyDateShortcut("today")}>Today</Shortcut>
             <Shortcut onClick={() => applyDateShortcut("yesterday")}>Yesterday</Shortcut>
@@ -313,20 +313,20 @@ function aggregate(items, makeRow) {
 }
 
 function Field({ label, children }) { return <div><label style={{ display: "block", fontWeight: "600", marginBottom: "6px" }}>{label}</label>{children}</div>; }
-function Shortcut({ onClick, children }) { return <button type="button" onClick={onClick} style={{ padding: "9px 13px", border: "1px solid #ccc", borderRadius: "8px", background: "#fff", color: "#111", fontWeight: "700", cursor: "pointer" }}>{children}</button>; }
-function Summary({ title, value, note, featured }) { return <div style={{ ...cardStyle, background: featured ? "#111" : "#fff", color: featured ? "#fff" : "#111" }}><div style={{ color: featured ? "#ccc" : "#666", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "27px", fontWeight: "700" }}>{value}</div>{note && <div style={{ color: featured ? "#bbb" : "#777", fontSize: "12px", marginTop: "7px" }}>{note}</div>}</div>; }
+function Shortcut({ onClick, children }) { return <button type="button" onClick={onClick} style={{ padding: "9px 13px", border: "1px solid var(--line-strong)", borderRadius: "8px", background: "#fff", color: "var(--ink)", fontWeight: "700", cursor: "pointer" }}>{children}</button>; }
+function Summary({ title, value, note, featured }) { return <div style={{ ...cardStyle, background: featured ? "var(--ink)" : "#fff", color: featured ? "#fff" : "var(--ink)" }}><div style={{ color: featured ? "var(--line-strong)" : "var(--muted)", fontSize: "14px", marginBottom: "8px" }}>{title}</div><div style={{ fontSize: "27px", fontWeight: "700" }}>{value}</div>{note && <div style={{ color: featured ? "#bbb" : "var(--muted)", fontSize: "12px", marginTop: "7px" }}>{note}</div>}</div>; }
 function ReportTable({ title, subtitle, empty, headings, children }) {
   const hasRows = Array.isArray(children) ? children.length > 0 : !!children;
-  return <section style={{ ...cardStyle, padding: 0, overflowX: "auto", marginBottom: "22px" }}><div style={{ padding: "22px 24px" }}><h2 style={{ margin: "0 0 5px", fontSize: "21px" }}>{title}</h2>{subtitle && <div style={{ color: "#666", fontSize: "13px" }}>{subtitle}</div>}</div>{!hasRows ? <div style={{ padding: "0 24px 24px", color: "#666" }}>{empty}</div> : <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}><thead><tr style={{ textAlign: "left", background: "#fafafa" }}>{headings.map((heading) => <th key={heading} style={thStyle}>{heading}</th>)}</tr></thead><tbody>{children}</tbody></table>}</section>;
+  return <section style={{ ...cardStyle, padding: 0, overflowX: "auto", marginBottom: "22px" }}><div style={{ padding: "22px 24px" }}><h2 style={{ margin: "0 0 5px", fontSize: "21px" }}>{title}</h2>{subtitle && <div style={{ color: "var(--muted)", fontSize: "13px" }}>{subtitle}</div>}</div>{!hasRows ? <div style={{ padding: "0 24px 24px", color: "var(--muted)" }}>{empty}</div> : <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}><thead><tr style={{ textAlign: "left", background: "var(--surface-2)" }}>{headings.map((heading) => <th key={heading} style={thStyle}>{heading}</th>)}</tr></thead><tbody>{children}</tbody></table>}</section>;
 }
 function Td({ children, strong }) { return <td style={{ padding: "13px 15px", fontSize: "14px", whiteSpace: "nowrap", fontWeight: strong ? "700" : "400" }}>{children}</td>; }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
+const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
 const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const buttonStyle = { padding: "12px 17px", border: "none", borderRadius: "8px", background: "#111", color: "#fff", fontWeight: "700", cursor: "pointer" };
+const buttonStyle = { padding: "12px 17px", border: "none", borderRadius: "8px", background: "var(--ink)", color: "#fff", fontWeight: "700", cursor: "pointer" };
 const summaryGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "15px", marginBottom: "22px" };
 const twoColumnStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: "22px" };
 const thStyle = { padding: "13px 15px", fontSize: "13px", whiteSpace: "nowrap" };
-const rowStyle = { borderTop: "1px solid #eee" };
-const errorStyle = { padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: "#fff0f0", color: "#9b1c1c", border: "1px solid #f1c1c1", fontWeight: "600" };
+const rowStyle = { borderTop: "1px solid var(--line)" };
+const errorStyle = { padding: "14px 16px", marginBottom: "20px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };

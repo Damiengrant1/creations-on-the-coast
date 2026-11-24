@@ -240,9 +240,9 @@ export default function NewProductPage() {
       <main
         style={{
           minHeight: "100vh",
-          background: "#f7f7f8",
+          background: "var(--sand)",
           padding: "40px 20px",
-          fontFamily: "Arial, sans-serif",
+          fontFamily: "var(--font)",
         }}
       >
         <div style={{ maxWidth: "760px", margin: "0 auto" }}>
@@ -256,9 +256,9 @@ export default function NewProductPage() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f7f7f8",
+        background: "var(--sand)",
         padding: "40px 20px",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "var(--font)",
       }}
     >
       <div
@@ -272,7 +272,7 @@ export default function NewProductPage() {
           style={{
             display: "inline-block",
             marginBottom: "24px",
-            color: "#333",
+            color: "var(--text-2)",
           }}
         >
           ← Back to Products
@@ -291,7 +291,7 @@ export default function NewProductPage() {
 
         <p
           style={{
-            color: "#666",
+            color: "var(--muted)",
             marginBottom: "28px",
           }}
         >
@@ -315,7 +315,7 @@ export default function NewProductPage() {
             <div
               style={{
                 marginTop: "4px",
-                color: "#555",
+                color: "var(--muted)",
                 fontSize: "14px",
               }}
             >
@@ -331,7 +331,7 @@ export default function NewProductPage() {
             background: "#fff",
             padding: "28px",
             borderRadius: "14px",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+            boxShadow: "var(--shadow)",
           }}
         >
           <div style={{ marginBottom: "20px" }}>
@@ -491,13 +491,13 @@ export default function NewProductPage() {
 
           <div
             style={{
-              background: "#f7f7f8",
+              background: "var(--sand)",
               padding: "18px",
               borderRadius: "10px",
               marginBottom: "20px",
             }}
           >
-            <div style={{ color: "#666" }}>
+            <div style={{ color: "var(--muted)" }}>
               Total Direct Cost
             </div>
 
@@ -513,7 +513,7 @@ export default function NewProductPage() {
 
             <div
               style={{
-                color: "#777",
+                color: "var(--muted)",
                 fontSize: "13px",
                 marginTop: "6px",
               }}
@@ -526,7 +526,7 @@ export default function NewProductPage() {
           <div
             style={{
               padding: "18px",
-              background: "#f7f7f8",
+              background: "var(--sand)",
               borderRadius: "10px",
               marginBottom: "20px",
             }}
@@ -622,7 +622,7 @@ export default function NewProductPage() {
               style={{
                 marginBottom: "18px",
                 padding: "12px",
-                background: "#f2f2f2",
+                background: "var(--surface-2)",
                 borderRadius: "8px",
               }}
             >
@@ -638,7 +638,7 @@ export default function NewProductPage() {
               padding: "15px",
               borderRadius: "9px",
               border: "none",
-              background: "#111",
+              background: "var(--ink)",
               color: "#fff",
               fontWeight: "700",
               fontSize: "16px",

@@ -104,7 +104,7 @@ export default function SupplierCreditsPage() {
       <div style={{ maxWidth: "760px", margin: "0 auto" }}>
         <Link href="/stock-purchases" style={backStyle}>← Back to Stock Purchases</Link>
         <h1 style={{ fontSize: "36px", margin: "22px 0 8px" }}>Supplier Refunds & Credit Notes</h1>
-        <p style={{ color: "#666", marginBottom: "28px" }}>
+        <p style={{ color: "var(--muted)", marginBottom: "28px" }}>
           Record money returned by a supplier, or a credit note to use against a future invoice.
         </p>
 
@@ -163,13 +163,13 @@ export default function SupplierCreditsPage() {
   );
 }
 
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "40px 20px", fontFamily: "Arial, sans-serif" };
-const backStyle = { color: "#333", fontWeight: "600" };
-const cardStyle = { background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "40px 20px", fontFamily: "var(--font)" };
+const backStyle = { color: "var(--text-2)", fontWeight: "600" };
+const cardStyle = { background: "#fff", padding: "28px", borderRadius: "14px", boxShadow: "var(--shadow)" };
 const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" };
 const labelStyle = { display: "block", fontWeight: "600", marginBottom: "6px" };
 const fieldStyle = { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", fontSize: "16px", boxSizing: "border-box", background: "#fff" };
-const infoStyle = { margin: "20px 0", padding: "14px", background: "#f2f2f2", borderRadius: "8px", color: "#555" };
-const buttonStyle = { width: "100%", padding: "16px", border: "none", borderRadius: "9px", background: "#111", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer" };
-const successStyle = { padding: "14px", marginBottom: "20px", borderRadius: "9px", background: "#edf9f0", color: "#176b31", border: "1px solid #bfe2c8", fontWeight: "600" };
-const errorStyle = { padding: "14px", marginBottom: "20px", borderRadius: "9px", background: "#fff0f0", color: "#9b1c1c", border: "1px solid #f1c1c1", fontWeight: "600" };
+const infoStyle = { margin: "20px 0", padding: "14px", background: "var(--surface-2)", borderRadius: "8px", color: "var(--muted)" };
+const buttonStyle = { width: "100%", padding: "16px", border: "none", borderRadius: "9px", background: "var(--ink)", color: "#fff", fontSize: "17px", fontWeight: "700", cursor: "pointer" };
+const successStyle = { padding: "14px", marginBottom: "20px", borderRadius: "9px", background: "var(--leaf-soft)", color: "var(--leaf)", border: "1px solid #bfe2c8", fontWeight: "600" };
+const errorStyle = { padding: "14px", marginBottom: "20px", borderRadius: "9px", background: "var(--coral-soft)", color: "#9b2c17", border: "1px solid #f1c1c1", fontWeight: "600" };

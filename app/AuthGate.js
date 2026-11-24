@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import AppShell from "./AppShell";
 
 const AccessContext = createContext({ role: null, isAdmin: false });
 const ACCESS_CACHE_KEY = "creations-access-cache-v1";
@@ -11,7 +12,15 @@ export function useAccess() {
   return useContext(AccessContext);
 }
 
-const accountabilityRoutes = new Set(["/", "/jobs", "/jobs/stock-order", "/products", "/event-pos"]);
+// Pages the team (accountability logins) can open. Money pages stay with the admin.
+const staffRoutes = ["/", "/jobs", "/products", "/event-pos", "/record-sale", "/stocktake"];
+
+function staffCanOpen(pathname) {
+  if (pathname === "/products/new" || pathname.startsWith("/products/edit")) return false;
+  return staffRoutes.some((route) =>
+    route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
 
 export default function AuthGate({ children }) {
   const pathname = usePathname();
@@ -105,7 +114,7 @@ export default function AuthGate({ children }) {
     if (
       !isLoginPage &&
       access?.role === "accountability" &&
-      !accountabilityRoutes.has(pathname)
+      !staffCanOpen(pathname)
     ) {
       router.replace("/");
     }
@@ -143,51 +152,35 @@ export default function AuthGate({ children }) {
 
   return (
     <AccessContext.Provider value={contextValue}>
-      <button type="button" onClick={signOut} style={signOutStyle}>
-        Sign Out
-      </button>
-      {children}
+      <AppShell isAdmin={contextValue.isAdmin} role={access.role} onSignOut={signOut}>
+        {children}
+      </AppShell>
     </AccessContext.Provider>
   );
 }
 
 const loadingStyle = {
   minHeight: "100vh",
-  background: "#f7f7f8",
+  background: "var(--sand)",
   display: "grid",
   placeItems: "center",
   padding: "20px",
-  fontFamily: "Arial, sans-serif",
+  fontFamily: "var(--font)",
 };
 
 const loadingCardStyle = {
   background: "#fff",
   padding: "28px",
   borderRadius: "12px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+  boxShadow: "var(--shadow)",
   fontWeight: "700",
   textAlign: "center",
-};
-
-const signOutStyle = {
-  position: "fixed",
-  top: "14px",
-  right: "14px",
-  zIndex: 1000,
-  border: "1px solid #ccc",
-  borderRadius: "8px",
-  background: "#fff",
-  color: "#111",
-  padding: "9px 13px",
-  fontWeight: "700",
-  cursor: "pointer",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
 };
 
 const accessButtonStyle = {
   border: 0,
   borderRadius: "8px",
-  background: "#111",
+  background: "var(--ink)",
   color: "#fff",
   padding: "10px 14px",
   fontWeight: "700",

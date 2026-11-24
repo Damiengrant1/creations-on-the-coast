@@ -5,8 +5,8 @@ export default function manifest() {
     description: "Creations on the Coast business management system",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f7f8",
-    theme_color: "#111111",
+    background_color: "#f5f1ea",
+    theme_color: "#12324a",
     icons: [
       {
         src: "/icons/icon-192.png",

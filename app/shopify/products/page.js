@@ -126,15 +126,15 @@ export default function ShopifyProductMatchingPage() {
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1350px", margin: "0 auto" }}>
-        <Link href="/shopify" onClick={leavePage} style={{ color: "#444", fontWeight: 700 }}>← Back to Shopify</Link>
+        <Link href="/shopify" onClick={leavePage} style={{ color: "var(--text-2)", fontWeight: 700 }}>← Back to Shopify</Link>
         <h1 style={{ fontSize: "34px", margin: "24px 0 10px" }}>Shopify product matching</h1>
-        <p style={{ color: "#555", lineHeight: 1.6, marginBottom: "24px" }}>
+        <p style={{ color: "var(--muted)", lineHeight: 1.6, marginBottom: "24px" }}>
           Choose the blank stock item used for each website variant. Different designs can share the same stock item.
           Sales will use the amount actually charged on Shopify and the linked item&apos;s stock and production costs.
         </p>
 
-        {error && <div role="alert" style={{ ...noticeStyle, color: "#9b1c1c", background: "#fff0f0" }}>{error}</div>}
-        {message && <div role="status" style={{ ...noticeStyle, color: "#166534", background: "#effaf1" }}>{message}</div>}
+        {error && <div role="alert" style={{ ...noticeStyle, color: "#9b2c17", background: "var(--coral-soft)" }}>{error}</div>}
+        {message && <div role="status" style={{ ...noticeStyle, color: "var(--leaf)", background: "#effaf1" }}>{message}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "22px" }}>
           <Summary title="Website variants" value={loading ? "…" : scopeRows.length} />
@@ -164,7 +164,7 @@ export default function ShopifyProductMatchingPage() {
                   const product = byId.get(selectedId);
                   const changed = Object.hasOwn(edits, row.shopify_variant_id);
                   return <tr key={row.shopify_variant_id} style={{ background: changed ? "#fffbed" : "transparent" }}>
-                    <td style={cellStyle}><strong>{row.shopify_product_title}</strong><div style={{ color: "#555", marginTop: "6px" }}>{row.shopify_variant_title}</div>
+                    <td style={cellStyle}><strong>{row.shopify_product_title}</strong><div style={{ color: "var(--muted)", marginTop: "6px" }}>{row.shopify_variant_title}</div>
                       {row.shopify_status !== "ACTIVE" && <small>{row.shopify_status.toLowerCase()}</small>}
                     </td>
                     <td style={cellStyle}>{money(row.shopify_price)}</td>
@@ -177,8 +177,8 @@ export default function ShopifyProductMatchingPage() {
                       {!row.product_id && !changed && row.match_note && <div style={{ color: "#76541a", fontSize: "13px", lineHeight: 1.5, marginTop: "7px" }}>{row.match_note}</div>}
                       {changed && <small>Unsaved change</small>}
                     </td>
-                    <td style={cellStyle}>{product ? <><strong>{money(Number(product.stock_cost) + Number(product.production_cost))}</strong><div style={{ fontSize: "12px", color: "#666", marginTop: "5px" }}>Stock {money(product.stock_cost)}<br />Production {money(product.production_cost)}</div></> : "—"}</td>
-                    <td style={{ ...cellStyle, color: usable(row.product_id) ? "#166534" : "#8a6012", fontWeight: 700 }}>{usable(row.product_id) ? "Linked" : "Needs matching"}</td>
+                    <td style={cellStyle}>{product ? <><strong>{money(Number(product.stock_cost) + Number(product.production_cost))}</strong><div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "5px" }}>Stock {money(product.stock_cost)}<br />Production {money(product.production_cost)}</div></> : "—"}</td>
+                    <td style={{ ...cellStyle, color: usable(row.product_id) ? "var(--leaf)" : "#8a6012", fontWeight: 700 }}>{usable(row.product_id) ? "Linked" : "Needs matching"}</td>
                   </tr>;
                 })}</tbody>
               </table>
@@ -188,22 +188,22 @@ export default function ShopifyProductMatchingPage() {
         </section>
 
         <div style={{ ...cardStyle, position: "sticky", bottom: "10px", marginTop: "16px", display: "flex", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", border: "1px solid #ddd" }}>
-          <div><strong>{dirtyCount} unsaved change{dirtyCount === 1 ? "" : "s"}</strong><div style={{ color: "#666", marginTop: "5px", fontSize: "13px" }}>Saving links does not change stock or sales. New imports use the saved links.</div></div>
+          <div><strong>{dirtyCount} unsaved change{dirtyCount === 1 ? "" : "s"}</strong><div style={{ color: "var(--muted)", marginTop: "5px", fontSize: "13px" }}>Saving links does not change stock or sales. New imports use the saved links.</div></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            <button type="button" disabled={saving || loading} onClick={() => { if (!dirtyCount || window.confirm("Discard your unsaved changes and reload?")) loadData(); }} style={{ ...buttonStyle, color: "#111", background: "#eee" }}>{dirtyCount ? "Discard and reload" : "Reload links"}</button>
+            <button type="button" disabled={saving || loading} onClick={() => { if (!dirtyCount || window.confirm("Discard your unsaved changes and reload?")) loadData(); }} style={{ ...buttonStyle, color: "var(--ink)", background: "var(--line)" }}>{dirtyCount ? "Discard and reload" : "Reload links"}</button>
             <button type="button" disabled={saving || loading || !dirtyCount} onClick={save} style={{ ...buttonStyle, opacity: saving || loading || !dirtyCount ? 0.5 : 1 }}>{saving ? "Saving…" : "Save product links"}</button>
           </div>
         </div>
-        <p style={{ color: "#777", fontSize: "13px", lineHeight: 1.6 }}>Only current variants from active Shopify products are shown by default. Unlisted, draft and archived products can be included above. Removed variants are kept in history. Reload links refreshes saved links and stock records; it does not fetch newly added Shopify products.</p>
+        <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.6 }}>Only current variants from active Shopify products are shown by default. Unlisted, draft and archived products can be included above. Removed variants are kept in history. Reload links refreshes saved links and stock records; it does not fetch newly added Shopify products.</p>
       </div>
     </main>
   );
 }
 
-function Summary({ title, value }) { return <div style={cardStyle}><div style={{ color: "#666", marginBottom: "8px" }}>{title}</div><strong style={{ fontSize: "28px" }}>{value}</strong></div>; }
-const pageStyle = { minHeight: "100vh", background: "#f7f7f8", padding: "50px 20px", color: "#111", fontFamily: "Arial, sans-serif" };
-const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" };
-const inputStyle = { display: "block", width: "100%", boxSizing: "border-box", marginTop: "7px", border: "1px solid #ccc", borderRadius: "8px", padding: "11px", fontSize: "14px", background: "#fff", color: "#111" };
+function Summary({ title, value }) { return <div style={cardStyle}><div style={{ color: "var(--muted)", marginBottom: "8px" }}>{title}</div><strong style={{ fontSize: "28px" }}>{value}</strong></div>; }
+const pageStyle = { minHeight: "100vh", background: "var(--sand)", padding: "50px 20px", color: "var(--ink)", fontFamily: "var(--font)" };
+const cardStyle = { background: "#fff", padding: "22px", borderRadius: "12px", boxShadow: "var(--shadow)" };
+const inputStyle = { display: "block", width: "100%", boxSizing: "border-box", marginTop: "7px", border: "1px solid var(--line-strong)", borderRadius: "8px", padding: "11px", fontSize: "14px", background: "#fff", color: "var(--ink)" };
 const cellStyle = { padding: "14px 10px", borderBottom: "1px solid #e5e5e5", verticalAlign: "top", lineHeight: 1.5 };
-const buttonStyle = { padding: "13px 18px", border: 0, borderRadius: "8px", color: "#fff", background: "#111", fontWeight: 700, cursor: "pointer" };
+const buttonStyle = { padding: "13px 18px", border: 0, borderRadius: "8px", color: "#fff", background: "var(--ink)", fontWeight: 700, cursor: "pointer" };
 const noticeStyle = { borderRadius: "9px", marginBottom: "18px", padding: "15px", lineHeight: 1.5 };
