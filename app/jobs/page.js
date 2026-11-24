@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { useBusinessSettings } from "../../lib/useBusinessSettings";
 import {
   BOARD_COLUMNS,
   CLOSED_STATUSES,
@@ -14,6 +15,7 @@ import {
   displayDate,
   friendlyDue,
   localDateString,
+  isWebsiteOrder,
   needsPayment,
   paymentTone,
   statusTone,
@@ -32,6 +34,7 @@ function itemsSummary(job) {
 }
 
 export default function JobsPage() {
+  const { fresh_start_date: freshStart } = useBusinessSettings();
   const [jobs, setJobs] = useState([]);
   const [products, setProducts] = useState([]);
   const [stockLevels, setStockLevels] = useState([]);
@@ -80,7 +83,7 @@ export default function JobsPage() {
       supabase
         .from("jobs")
         .select(
-          "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, sale_id, created_at, updated_at, job_items(id, item_description, quantity, unit_price, personalisation, product_id)"
+          "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, sale_id, square_order_id, closed_at_fresh_start, completed_at, created_at, updated_at, job_items(id, item_description, quantity, unit_price, personalisation, product_id)"
         )
         .order("due_date", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false }),
@@ -198,7 +201,7 @@ export default function JobsPage() {
     return jobs.filter((job) => {
       const closed = CLOSED_STATUSES.has(job.status);
       if (quickFilter === "payment") {
-        if (!needsPayment(job)) return false;
+        if (!needsPayment(job, freshStart)) return false;
       } else if (closed && !showClosed) {
         return false;
       }
@@ -224,7 +227,7 @@ export default function JobsPage() {
         itemText,
       ].some((value) => String(value || "").toLowerCase().includes(search));
     });
-  }, [jobs, searchTerm, quickFilter, stageFilter, showClosed, today]);
+  }, [jobs, searchTerm, quickFilter, stageFilter, showClosed, today, freshStart]);
 
   const counts = useMemo(() => {
     const active = jobs.filter((job) => !CLOSED_STATUSES.has(job.status));
@@ -236,9 +239,9 @@ export default function JobsPage() {
         const days = Math.round((new Date(job.due_date) - new Date(today)) / 86400000);
         return days >= 0 && days <= 7;
       }).length,
-      payment: jobs.filter(needsPayment).length,
+      payment: jobs.filter((job) => needsPayment(job, freshStart)).length,
     };
-  }, [jobs, today]);
+  }, [jobs, today, freshStart]);
 
   const closedJobs = filteredJobs.filter((job) => CLOSED_STATUSES.has(job.status));
 
@@ -319,7 +322,7 @@ export default function JobsPage() {
                 </div>
                 {columnJobs.length === 0 && <div style={{ color: "var(--muted)", fontSize: 13, padding: "4px 6px 10px" }}>Nothing here</div>}
                 {columnJobs.map((job) => (
-                  <JobCard key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+                  <JobCard key={job.id} job={job} freshStart={freshStart} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
                 ))}
               </section>
             );
@@ -331,7 +334,7 @@ export default function JobsPage() {
             <div className="card">{jobs.length === 0 ? "No jobs yet. Add your first one with New job." : "No jobs match. Try clearing the filters."}</div>
           )}
           {filteredJobs.filter((job) => quickFilter === "payment" || !CLOSED_STATUSES.has(job.status)).map((job) => (
-            <JobRow key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+            <JobRow key={job.id} job={job} freshStart={freshStart} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
           ))}
         </div>
       )}
@@ -345,7 +348,7 @@ export default function JobsPage() {
             <div className="list-rows" style={{ marginTop: 12 }}>
               {closedJobs.length === 0 && <div className="card">None to show.</div>}
               {closedJobs.map((job) => (
-                <JobRow key={job.id} job={job} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
+                <JobRow key={job.id} job={job} freshStart={freshStart} today={today} stock={stockStatus(job)} busy={updatingId === job.id} onMove={changeStatus} />
               ))}
             </div>
           )}
@@ -376,14 +379,26 @@ function FilterChip({ on, tone = "", onClick, children }) {
 }
 
 // The main "move it on" control. Finishing a job that hasn't been paid for sends you to take payment first.
-function NextStep({ job, busy, onMove }) {
-  if (needsPayment(job)) {
-    return <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--coral)" }}>💷 Take payment</Link>;
+function NextStep({ job, freshStart, busy, onMove }) {
+  const web = isWebsiteOrder(job);
+  if (needsPayment(job, freshStart)) {
+    return (
+      <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--coral)" }}>
+        💷 {web ? "Record website sale" : "Take payment"}
+      </Link>
+    );
   }
-  const next = NEXT_STEP[job.status];
+  const next =
+    web && ["new", "artwork_information_needed", "awaiting_customer_approval"].includes(job.status)
+      ? { to: "ready_to_produce", label: "Ready to make" }
+      : NEXT_STEP[job.status];
   if (!next) return null;
-  if (next.to === "completed" && !job.sale_id) {
-    return <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--leaf)" }}>💷 Take payment & finish</Link>;
+  if (next.to === "completed" && !job.sale_id && !job.closed_at_fresh_start) {
+    return (
+      <Link href={`/jobs/edit/${job.id}#take-payment`} className="btn small" style={{ background: "var(--leaf)" }}>
+        💷 {web ? "Posted: record sale" : "Take payment & finish"}
+      </Link>
+    );
   }
   return (
     <button type="button" className="btn small" style={{ background: "var(--leaf)" }} disabled={busy} onClick={() => onMove(job.id, next.to)}>
@@ -408,7 +423,7 @@ function MoveSelect({ job, busy, onMove }) {
   );
 }
 
-function JobCard({ job, today, stock, busy, onMove }) {
+function JobCard({ job, freshStart, today, stock, busy, onMove }) {
   const due = friendlyDue(job.due_date, today);
   const overdue = due.tone === "coral";
   const soon = due.tone === "sun";
@@ -424,17 +439,18 @@ function JobCard({ job, today, stock, busy, onMove }) {
         <span className={`pill ${statusTone(job.status)}`}>{STATUS_LABELS[job.status]}</span>
         <span className={`pill ${paymentTone(job.payment_status)}`}>{PAYMENT_LABELS[job.payment_status] || job.payment_status}</span>
         {stock && <span className={`pill ${stock.tone}`} title={stock.title}>{stock.label}</span>}
+        {isWebsiteOrder(job) && <span className="pill sea">🌐 Website</span>}
         {job.priority && job.priority !== "normal" && <span className="pill coral">{job.priority === "urgent" ? "Urgent" : "High priority"}</span>}
       </div>
       <div className="actions">
-        <NextStep job={job} busy={busy} onMove={onMove} />
+        <NextStep job={job} freshStart={freshStart} busy={busy} onMove={onMove} />
         <MoveSelect job={job} busy={busy} onMove={onMove} />
       </div>
     </article>
   );
 }
 
-function JobRow({ job, today, stock, busy, onMove }) {
+function JobRow({ job, freshStart, today, stock, busy, onMove }) {
   const due = friendlyDue(job.due_date, today);
   const closed = CLOSED_STATUSES.has(job.status);
   return (
@@ -456,7 +472,7 @@ function JobRow({ job, today, stock, busy, onMove }) {
         {stock && <span className={`pill ${stock.tone}`} title={stock.title}>{stock.label}</span>}
       </div>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <NextStep job={job} busy={busy} onMove={onMove} />
+        <NextStep job={job} freshStart={freshStart} busy={busy} onMove={onMove} />
         <MoveSelect job={job} busy={busy} onMove={onMove} />
         <Link href={`/jobs/edit/${job.id}`} className="btn small ghost">{job.sale_id ? "View" : "Edit"}</Link>
       </div>

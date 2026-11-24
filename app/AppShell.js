@@ -43,6 +43,7 @@ export const NAV_GROUPS = [
       { href: "/cash-flow", label: "Cash flow", icon: "🏦" },
       { href: "/transactions", label: "Transactions", icon: "🔁" },
       { href: "/reports", label: "Reports", icon: "📊" },
+      { href: "/fresh-start", label: "Fresh start", icon: "🧹" },
     ],
   },
   {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useBusinessSettings } from "../lib/useBusinessSettings";
 import { useAccess } from "./AuthGate";
 import {
   BOARD_COLUMNS,
@@ -21,7 +22,8 @@ function isJwtTimingError(error) {
 }
 
 function money(value) {
-  return `£${Number(value || 0).toFixed(2)}`;
+  const amount = Number(value || 0);
+  return `${amount < -0.004 ? "−" : ""}£${Math.abs(amount).toFixed(2)}`;
 }
 
 function greeting() {
@@ -34,29 +36,38 @@ function greeting() {
 async function fetchJobs() {
   return supabase
     .from("jobs")
-    .select("id, job_number, customer_name, status, priority, due_date, payment_status, quoted_total, sale_id, created_at, job_items(quantity, item_description)")
+    .select("id, job_number, customer_name, status, priority, due_date, payment_status, quoted_total, sale_id, square_order_id, closed_at_fresh_start, completed_at, created_at, job_items(quantity, item_description)")
     .order("due_date", { ascending: true, nullsFirst: false });
 }
 
-async function fetchMoney() {
+async function fetchMoney(since) {
+  let sales = supabase.from("sale_totals").select("total_sales, gross_profit");
+  let expenses = supabase.from("expenses").select("amount");
+  if (since) {
+    sales = sales.gte("sale_datetime", `${since}T00:00:00`);
+    expenses = expenses.gte("expense_date", since);
+  }
   return Promise.all([
-    supabase.from("sale_totals").select("total_sales, gross_profit"),
-    supabase.from("expenses").select("amount"),
+    sales,
+    expenses,
     supabase.from("account_balances").select("account_id, account_name, account_type, current_balance").order("account_name"),
   ]);
 }
 
 export default function HomePage() {
   const { isAdmin } = useAccess();
+  const settings = useBusinessSettings();
+  const freshStart = settings.fresh_start_date;
   const [jobs, setJobs] = useState([]);
   const [figures, setFigures] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!settings.loaded) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, [isAdmin, settings.loaded, freshStart]);
 
   async function load() {
     setLoading(true);
@@ -77,7 +88,7 @@ export default function HomePage() {
     setJobs(jobsResult.data || []);
 
     if (isAdmin) {
-      const results = await fetchMoney();
+      const results = await fetchMoney(freshStart);
       const firstError = results.find((result) => result.error)?.error;
       if (firstError) {
         setError(`Could not load money figures: ${firstError.message}`);
@@ -92,6 +103,8 @@ export default function HomePage() {
           expenses,
           netProfit: grossProfit - expenses,
           cash: sum(accountsResult.data, "current_balance"),
+          square: (accountsResult.data || []).find((a) => a.account_id === settings.square_account_id) || (accountsResult.data || []).find((a) => /square/i.test(a.account_name)),
+          tin: (accountsResult.data || []).find((a) => /^cash$/i.test(a.account_name)),
           accounts: accountsResult.data || [],
         });
       }
@@ -119,12 +132,15 @@ export default function HomePage() {
       .sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999"))
       .slice(0, 6)
       .map((job) => ({ ...job, due: due(job) }));
-    const unpaidFinished = jobs.filter(needsPayment);
+    const unpaidFinished = jobs.filter((job) => needsPayment(job, freshStart));
     const paidNotRecorded = jobs.filter(
-      (job) => job.payment_status === "paid" && !job.sale_id && job.status !== "cancelled" && job.status !== "completed"
+      (job) =>
+        job.payment_status === "paid" && !job.sale_id && !job.closed_at_fresh_start &&
+        job.status !== "cancelled" && job.status !== "completed" && !job.square_order_id
     );
-    return { active, overdue, thisWeek, columns, upNext, unpaidFinished, paidNotRecorded };
-  }, [jobs, today]);
+    const websiteWaiting = jobs.filter((job) => job.square_order_id && !CLOSED_STATUSES.has(job.status));
+    return { active, overdue, thisWeek, columns, upNext, unpaidFinished, paidNotRecorded, websiteWaiting };
+  }, [jobs, today, freshStart]);
 
   return (
     <main className="page">
@@ -141,6 +157,18 @@ export default function HomePage() {
           {error}{" "}
           <button type="button" className="btn small ghost" onClick={load}>Try again</button>
         </div>
+      )}
+
+      {isAdmin && settings.loaded && !settings.fresh_start_completed_at && (
+        <Link href="/fresh-start" className="notice" style={{ display: "block", textDecoration: "none" }}>
+          🧹 <strong>Fresh start{freshStart ? ` on ${freshStart.split("-").reverse().join("/")}` : ""}:</strong> set the real balances, count the stock and clear out old jobs. Open the checklist →
+        </Link>
+      )}
+
+      {view.websiteWaiting.length > 0 && (
+        <Link href="/jobs" className="notice good" style={{ display: "block", textDecoration: "none" }}>
+          🌐 {view.websiteWaiting.length} website order{view.websiteWaiting.length === 1 ? "" : "s"} paid and waiting to be made. They&apos;re on the jobs board.
+        </Link>
       )}
 
       <div className="quick-actions">
@@ -217,7 +245,34 @@ export default function HomePage() {
 
       {isAdmin && (
         <>
-          <h2 className="section-title">Money (admin only)</h2>
+          <h2 className="section-title">Does it match? (admin only)</h2>
+          <div className="grid-tiles">
+            <Tile
+              label="Square in the dashboard"
+              value={figures?.square ? money(figures.square.current_balance) : "…"}
+              tone={figures?.square && Number(figures.square.current_balance) < -0.005 ? "alert" : "good"}
+              hint={
+                figures?.square && Number(figures.square.current_balance) < -0.005
+                  ? "Below zero: Square paid out money for card sales nobody recorded."
+                  : "Should be about what Square hasn't paid out yet."
+              }
+            />
+            <Tile
+              label="Cash in the dashboard"
+              value={figures?.tin ? money(figures.tin.current_balance) : "…"}
+              tone={figures?.tin && Number(figures.tin.current_balance) < -0.005 ? "alert" : "sea"}
+              hint="Count the cash tin. It should match this."
+            />
+            <Tile
+              label="Finished jobs with no sale"
+              value={loading ? "…" : view.unpaidFinished.length}
+              tone={view.unpaidFinished.length ? "alert" : "good"}
+              href="/jobs?filter=payment"
+              hint={view.unpaidFinished.length ? "Money missing from the figures" : "All recorded"}
+            />
+          </div>
+
+          <h2 className="section-title">Money{freshStart ? ` since ${freshStart.split("-").reverse().join("/")}` : ""} (admin only)</h2>
           <div className="grid-tiles">
             <Tile label="Total sales" value={figures ? money(figures.sales) : "…"} />
             <Tile label="Gross profit" value={figures ? money(figures.grossProfit) : "…"} />
@@ -228,7 +283,7 @@ export default function HomePage() {
           {figures?.accounts?.length > 0 && (
             <div className="grid-tiles">
               {figures.accounts.map((account) => (
-                <Tile key={account.account_id} label={account.account_name} value={money(account.current_balance)} hint={account.account_type} />
+                <Tile key={account.account_id} label={account.account_name} value={money(account.current_balance)} hint={{ bank: "Bank", cash: "Cash", payment_provider: "Card payments" }[account.account_type] || account.account_type} />
               ))}
             </div>
           )}

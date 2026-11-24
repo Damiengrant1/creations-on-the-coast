@@ -63,6 +63,7 @@ export default function EditJobPage() {
   const [saleDate, setSaleDate] = useState(todayString());
   const [paymentMethod, setPaymentMethod] = useState("Bank Transfer");
   const [accountId, setAccountId] = useState("");
+  const [websiteOrder, setWebsiteOrder] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,11 +84,11 @@ export default function EditJobPage() {
     setLoading(true);
     setMessage("");
 
-    const [jobResult, productsResult, accountsResult, stockResult, jobsResult] = await Promise.all([
+    const [jobResult, productsResult, accountsResult, stockResult, jobsResult, settingsResult] = await Promise.all([
       supabase
         .from("jobs")
         .select(
-          "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, sale_id, job_items(id, product_id, item_description, quantity, unit_price, personalisation, created_at)"
+          "id, job_number, received_date, customer_name, customer_phone, customer_email, source, status, priority, due_date, delivery_method, payment_status, quoted_total, artwork_details, notes, sale_id, square_order_id, job_items(id, product_id, item_description, quantity, unit_price, personalisation, created_at)"
         )
         .eq("id", jobId)
         .single(),
@@ -109,6 +110,11 @@ export default function EditJobPage() {
       supabase
         .from("jobs")
         .select("id, status, sale_id, job_items(product_id, quantity)"),
+      supabase
+        .from("business_settings")
+        .select("square_account_id, delivery_product_id")
+        .eq("id", true)
+        .maybeSingle(),
     ]);
 
     const error =
@@ -188,6 +194,26 @@ export default function EditJobPage() {
       }))
     );
     setAccounts(accountsResult.data || []);
+
+    // Website orders were paid online through Square: the sale goes into the Square account,
+    // and the delivery charge becomes its own line so the items add up to what was paid.
+    const website = Boolean(job.square_order_id);
+    setWebsiteOrder(website);
+    if (website && !job.sale_id) {
+      const shared = settingsResult?.data || {};
+      if (shared.square_account_id) setAccountId(shared.square_account_id);
+      setPaymentMethod("Card");
+      const lines = job.job_items || [];
+      const linesTotal = lines.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0);
+      const delivery = Math.round((Number(job.quoted_total || 0) - linesTotal) * 100) / 100;
+      const hasDelivery = lines.some((item) => item.product_id && item.product_id === shared.delivery_product_id);
+      if (delivery > 0 && shared.delivery_product_id && !hasDelivery) {
+        setItems((current) => [
+          ...current,
+          { productId: shared.delivery_product_id, description: "Delivery", quantity: 1, unitPrice: delivery.toFixed(2), personalisation: "" },
+        ]);
+      }
+    }
     setLoading(false);
   }
 
@@ -594,7 +620,7 @@ export default function EditJobPage() {
 
         {!saleId && (
           <StickyActions summary={<>Job value <strong>£{(form.quotedTotal !== "" && form.quotedTotal !== null ? Number(form.quotedTotal) : itemTotal).toFixed(2)}</strong></>}>
-            <a href="#take-payment" style={ui.secondary}>💷 Take payment</a>
+            <a href="#take-payment" style={ui.secondary}>💷 {websiteOrder ? "Record sale" : "Take payment"}</a>
             <button type="submit" disabled={saving || converting} style={ui.primary}>
               {saving ? "Saving…" : "Save changes"}
             </button>
@@ -607,8 +633,12 @@ export default function EditJobPage() {
           <FormSection
             id="take-payment"
             step="£"
-            title="Take payment"
-            hint="Do this once the customer has paid in full. It records the sale and the money, and takes the items off stock."
+            title={websiteOrder ? "Record the website sale" : "Take payment"}
+            hint={
+              websiteOrder
+                ? "This order was paid online through Square. Link each item to a product above, then record the sale. The money goes into the Square account, ready for Square's payout to the bank."
+                : "Do this once the customer has paid in full. It records the sale and the money, and takes the items off stock."
+            }
           >
             {!stockLinked && (
               <div style={ui.notice}>Every item needs to be linked to a product before you can take payment. Pick one in Items above.</div>
@@ -634,7 +664,7 @@ export default function EditJobPage() {
             </div>
             <div style={{ marginTop: 16 }}>
               <button type="button" onClick={convertToSale} disabled={converting || !stockLinked || !totalsMatch} style={{ ...ui.primary, background: "var(--leaf)", width: "100%" }}>
-                {converting ? "Saving…" : `Take payment of £${itemTotal.toFixed(2)}`}
+                {converting ? "Saving…" : `${websiteOrder ? "Record website sale of" : "Take payment of"} £${itemTotal.toFixed(2)}`}
               </button>
             </div>
           </FormSection>
